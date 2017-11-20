@@ -27,9 +27,5 @@ set(HEADERS
         ${CMAKE_CURRENT_SOURCE_DIR}/type_def.h
         ${CMAKE_CURRENT_SOURCE_DIR}/expr.h
         ${CMAKE_CURRENT_SOURCE_DIR}/execute.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/parser.h
         PARENT_SCOPE
         )
-
-MESSAGE(STATUS ${SOURCE})
-MESSAGE(STATUS ${HEADERS})
