@@ -38,86 +38,34 @@ private:
     stx::btree_set<IndexKey> list;
     stx::btree_set<IndexKey>::iterator iter;
 
-    std::string genFilename(int tab, int col) {
-        std::ostringstream stm;
-        stm << tab << '.' << col << ".id";
-        return stm.str();
-    }
+    std::string genFilename(int tab, int col);
 
 public:
-    void clear() {
-        list.clear();
-        iter = list.begin();
-    }
+    void clear();
 
-    void load(int tab, int col) {
-        std::ifstream stm(genFilename(tab, col).c_str());
-        list.restore(stm);
-    }
+    void load(int tab, int col);
 
-    void store(int tab, int col) {
-        std::ofstream stm(genFilename(tab, col));
-        list.dump(stm);
-    }
+    void store(int tab, int col);
 
-    void drop(int tab, int col) {
-        remove(genFilename(tab, col).c_str());
-    }
+    void drop(int tab, int col);
 
-    void erase(const IndexKey &key) {
-        assert(list.erase(key) == 1);
-    }
+    void erase(const IndexKey &key);
 
-    void insert(const IndexKey &key) {
-        assert(list.find(key) == list.end());
-        list.insert(key);
-    }
+    void insert(const IndexKey &key);
 
-    int begin() {
-        iter = list.begin();
-        if (iter == list.end()) return -1;
-        return iter->getRid();
-    }
+    int begin();
 
-    int end() {
-        iter = list.end();
-        if (iter == list.begin()) return -1;
-        iter--;
-        return iter->getRid();
-    }
+    int end();
 
-    int lowerbound(const IndexKey &key) {
-        iter = list.lower_bound(key);
-        if (iter == list.end()) return -1;
-        return iter->getRid();
-    }
+    int lowerbound(const IndexKey &key);
 
-    int upperbound(const IndexKey &key) {
-        iter = list.upper_bound(key);
-        if (iter == list.begin()) return -1;
-        if (iter != list.begin()) iter--;
-        return iter->getRid();
-    }
+    int upperbound(const IndexKey &key);
 
-    int lowerboundEqual(const IndexKey &key) {
-        iter = list.lower_bound(key);
-        if (iter == list.end()) return -1;
-        if (iter->getFastCmp() == key.getFastCmp()) return iter->getRid();
-        return -1;
-    }
+    int lowerboundEqual(const IndexKey &key);
 
-    int next() {
-        if (iter == list.end()) return -1;
-        iter++;
-        if (iter == list.end()) return -1;
-        return iter->getRid();
-    }
+    int next();
 
-    int reversedNext() {
-        if (iter == list.begin()) return -1;
-        iter--;
-        return iter->getRid();
-    }
+    int reversedNext();
 };
 
 #endif

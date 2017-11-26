@@ -1,13 +1,10 @@
 #include <map>
 #include <cstring>
-#include <cstdlib>
-#include <cstdio>
 #include <cassert>
-#include <string>
 #include <regex>
 
 #include "expr.h"
-#include "type_def.h"
+
 using namespace std;
 
 typedef std::pair<string,ExprVal> table_value_t;

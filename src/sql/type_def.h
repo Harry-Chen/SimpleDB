@@ -5,17 +5,15 @@
 #include <stdint.h>
 
 #ifdef __cplusplus
-extern "C"{
+extern "C" {
 #endif
 
-enum
-{
+enum {
     COLUMN_FLAG_NOTNULL = 1,
     COLUMN_FLAG_DEFAULT = 2
 };
 
-enum
-{
+enum {
     COLUMN_TYPE_INT,
     COLUMN_TYPE_CHAR,
     COLUMN_TYPE_VARCHAR,
@@ -24,8 +22,7 @@ enum
 
 #define OPER_UNARY 0x80
 
-enum
-{
+enum {
     OPER_NONE,
     OPER_ADD,
     OPER_DEC,
@@ -49,8 +46,7 @@ enum
     OPER_ISNULL
 };
 
-enum
-{
+enum {
     TERM_NONE,
     TERM_INT,
     TERM_STRING,
@@ -60,88 +56,78 @@ enum
     TERM_COLUMN
 };
 
-enum{
+enum {
     CONSTRAINT_PRIMARY_KEY,
     CONSTRAINT_CHECK
 };
 
-typedef struct linked_list
-{
-    void* data;
-    struct linked_list* next;
-}linked_list;
+typedef struct linked_list {
+    void *data;
+    struct linked_list *next;
+} linked_list;
 
-typedef struct column_ref
-{
-    char* table;
-    char* column;
-}column_ref;
+typedef struct column_ref {
+    char *table;
+    char *column;
+} column_ref;
 
-typedef struct column_defs
-{
-    char* name;
+typedef struct column_defs {
+    char *name;
     int type;
     int size;
     unsigned int flags;
-    struct column_defs* next;
-}column_defs;
+    struct column_defs *next;
+} column_defs;
 
-typedef struct table_def
-{
-    char* name;
-    column_defs* columns;
-    linked_list* constraints;
-}table_def;
+typedef struct table_def {
+    char *name;
+    column_defs *columns;
+    linked_list *constraints;
+} table_def;
 
-typedef struct table_constraint
-{
+typedef struct table_constraint {
     int type;
-    char* column_name;
-    linked_list* values;
-}table_constraint;
+    char *column_name;
+    linked_list *values;
+} table_constraint;
 
-typedef struct insert_argu
-{
-    char* table;
-    linked_list* columns;
-    linked_list* values;
-}insert_argu;
+typedef struct insert_argu {
+    char *table;
+    linked_list *columns;
+    linked_list *values;
+} insert_argu;
 
-typedef struct expr_node
-{
-    union{
+typedef struct expr_node {
+    union {
         struct expr_node *left;
-        char* literal_s;
+        char *literal_s;
         int literal_i;
         double literal_d;
         uint8_t literal_b;
-        column_ref* column;
+        column_ref *column;
     };
     struct expr_node *right;
     uint8_t op;
     uint8_t term_type;
-}expr_node;
+} expr_node;
 
-typedef struct select_argu
-{
-    linked_list* column_expr;
-    linked_list* tables;
-    expr_node* where;
-}select_argu;
+typedef struct select_argu {
+    linked_list *column_expr;
+    linked_list *tables;
+    expr_node *where;
+} select_argu;
 
-typedef struct delete_argu
-{
-    char* table;
-    expr_node* where;
-}delete_argu;
+typedef struct delete_argu {
+    char *table;
+    expr_node *where;
+} delete_argu;
 
-typedef struct update_argu
-{
-    char* table;
-    column_ref* column;
-    expr_node* val_expr;
-    expr_node* where;
-}update_argu;
+typedef struct update_argu {
+    char *table;
+    column_ref *column;
+    expr_node *val_expr;
+    expr_node *where;
+} update_argu;
 
 #ifdef __cplusplus
 }

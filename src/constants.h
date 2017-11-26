@@ -1,5 +1,5 @@
-#ifndef __CONSTANTS_h__
-#define __CONSTANTS_h__
+#ifndef __CONSTANTS_H__
+#define __CONSTANTS_H__
 
 //----------------------FILE---------------------------------------
 #define PAGE_SIZE 8192

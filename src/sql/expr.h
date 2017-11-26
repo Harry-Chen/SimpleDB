@@ -4,10 +4,6 @@
 #include <stdint.h>
 #include "type_def.h"
 
-// #ifdef __cplusplus
-// extern "C"{
-// #endif
-
 enum{
     EXCEPTION_NONE,
     EXCEPTION_DIFF_TYPE,
@@ -42,9 +38,5 @@ ExprVal calcExpression(expr_node* expr);
 void free_expr(expr_node* expr);
 
 extern const char *Exception2String[];
-
-// #ifdef __cplusplus
-// }
-// #endif
 
 #endif

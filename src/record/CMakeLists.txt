@@ -13,7 +13,6 @@ set(SOURCE
         ${CMAKE_CURRENT_SOURCE_DIR}/Compare.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/DB.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/Index.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/RegisterManager.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/Table.cpp
         PARENT_SCOPE
         )
