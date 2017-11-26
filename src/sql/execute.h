@@ -6,7 +6,7 @@
 extern "C" {
 #endif
 
-#include "sql/type_def.h"
+#include "type_def.h"
 
 void report_sql_error(const char *error_name, const char *msg);
 void execute_desc_tables(const char *table_name);

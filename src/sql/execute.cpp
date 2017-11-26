@@ -1,11 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include "execute.h"
 
 #include "record/DB.h"
 #include "dbms/dbms.h"
-#include "sql/type_def.h"
 
 void free_column_ref(column_ref *c) {
     if (c->table)

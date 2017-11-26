@@ -1,6 +1,8 @@
 //
 // Created by Harry Chen on 2017/11/20.
 //
+#include <fstream>
+#include <vector>
 
 #include "DB.h"
 

@@ -2,9 +2,7 @@
 #define __DB_H__
 
 #include <string>
-#include <string>
-#include <fstream>
-#include <vector>
+
 #include "../constants.h"
 #include "Table.h"
 

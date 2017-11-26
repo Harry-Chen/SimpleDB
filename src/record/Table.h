@@ -1,15 +1,8 @@
 #ifndef __TABLE_H__
 #define __TABLE_H__
 
-#include <cstring>
-#include <string>
-#include <sstream>
-
-#include "../io/FileManager.h"
-#include "../io/BufPageManager.h"
 #include "Compare.h"
 #include "Index.h"
-#include "RegisterManager.h"
 
 struct Check {
     int col;
@@ -167,7 +160,6 @@ public:
     int selectReveredIndexNext(int col);
 
     char *getColumnName(int col);
-
 
 };
 

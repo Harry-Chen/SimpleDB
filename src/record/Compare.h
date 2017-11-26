@@ -1,10 +1,6 @@
 #ifndef __CMP_H__
 #define __CMP_H__
 
-#include <string>
-#include <cstring>
-#include <cassert>
-
 enum ColumnType {
     CT_INT, CT_VARCHAR, CT_FLOAT
 };

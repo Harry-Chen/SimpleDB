@@ -1,12 +1,7 @@
 #ifndef __INDEX_H__
 #define __INDEX_H__
 
-#include "Compare.h"
 #include "stx/btree_set.h"
-#include "RegisterManager.h"
-#include <string>
-#include <sstream>
-#include <fstream>
 
 // set rid to -1 when using tempBuffer in the table to compare.
 class IndexKey {

@@ -1,10 +1,6 @@
 #ifndef __DBMS_H__
 #define __DBMS_H__
 
-#include <vector>
-#include <functional>
-#include <string>
-#include <iostream>
 #include "record/DB.h"
 #include "sql/type_def.h"
 #include "sql/expr.h"

@@ -1,6 +1,9 @@
 //
 // Created by Harry Chen on 2017/11/20.
 //
+#include <string>
+#include <cstring>
+#include <cassert>
 
 #include "Compare.h"
 

@@ -1,7 +1,13 @@
 //
 // Created by Harry Chen on 2017/11/20.
 //
+#include <cstring>
+#include <string>
+#include <sstream>
 
+#include "../io/FileManager.h"
+#include "../io/BufPageManager.h"
+#include "RegisterManager.h"
 #include "Table.h"
 
 bool operator<(const IndexKey &a, const IndexKey &b) {
@@ -176,7 +182,7 @@ unsigned int Table::getNext(unsigned int rid) {
 // return -1 if name exist, columnId otherwise
 // size: maxlen for varchar, outputwidth for int
 int Table::addColumn(const char *name, ColumnType type, int size,
-              bool notNull, bool hasDefault, const char *data) {
+                     bool notNull, bool hasDefault, const char *data) {
     printf("adding %s %d %d\n", name, type, size);
     assert(head.pageTot == 1);
     assert(strlen(name) < MAX_NAME_LEN);

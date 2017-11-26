@@ -2,6 +2,10 @@
 // Created by Harry Chen on 2017/11/26.
 //
 
+#include <vector>
+#include <functional>
+#include <iostream>
+
 #include "dbms.h"
 
 DBMS::DBMS() {

@@ -1,7 +1,11 @@
 //
 // Created by Harry Chen on 2017/11/20.
 //
+#include <string>
+#include <sstream>
+#include <fstream>
 
+#include "RegisterManager.h"
 #include "Index.h"
 
 std::string Index::genFilename(int tab, int col) {
