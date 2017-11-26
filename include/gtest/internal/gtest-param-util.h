@@ -457,7 +457,7 @@ class ParameterizedTestCaseInfo : public ParameterizedTestCaseInfoBase {
   virtual const string& GetTestCaseName() const { return test_case_name_; }
   // Test case id to verify identity.
   virtual TypeId GetTestCaseTypeId() const { return GetTypeId<TestCase>(); }
-  // TEST_P macro uses AddTestPattern() to record information
+  // TEST_P macro uses AddTestPattern() to backend information
   // about a single test in a LocalTestInfo structure.
   // test_case_name is the base name of the test case (without invocation
   // prefix). test_base_name is the name of an individual test without
@@ -470,7 +470,7 @@ class ParameterizedTestCaseInfo : public ParameterizedTestCaseInfoBase {
                                                        test_base_name,
                                                        meta_factory)));
   }
-  // INSTANTIATE_TEST_CASE_P macro uses AddGenerator() to record information
+  // INSTANTIATE_TEST_CASE_P macro uses AddGenerator() to backend information
   // about a generator.
   int AddTestCaseInstantiation(const string& instantiation_name,
                                GeneratorCreationFunc* func,

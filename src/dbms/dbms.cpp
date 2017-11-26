@@ -5,11 +5,13 @@
 #include <vector>
 #include <functional>
 #include <iostream>
+#include <map>
+#include <cstring>
 
 #include "dbms.h"
 
 DBMS::DBMS() {
-    current = new DB();
+    current = new Database();
 }
 
 bool DBMS::requireDbOpen() {
@@ -400,7 +402,7 @@ void DBMS::createTable(const table_def *table) {
 }
 
 void DBMS::dropDB(const char *db_name) {
-    DB db;
+    Database db;
     if (current->isOpen() && current->getDBName() == db_name)
         current->close();
     db.open(db_name);

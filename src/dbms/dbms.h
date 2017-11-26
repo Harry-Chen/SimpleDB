@@ -1,15 +1,15 @@
 #ifndef __DBMS_H__
 #define __DBMS_H__
 
-#include "record/DB.h"
-#include "sql/type_def.h"
-#include "sql/expr.h"
+#include "backend/Database.h"
+#include "sql_parser/type_def.h"
+#include "sql_parser/Expression.h"
 
 class DBMS {
     enum IDX_TYPE {
         IDX_NONE, IDX_LOWWER, IDX_UPPER, IDX_EQUAL
     };
-    DB *current;
+    Database *current;
     std::vector<char *> pendingFree;
 
     DBMS();

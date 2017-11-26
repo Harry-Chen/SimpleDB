@@ -4,26 +4,26 @@
 #include <fstream>
 #include <vector>
 
-#include "DB.h"
+#include "Database.h"
 
-DB::DB() {
+Database::Database() {
     ready = 0;
     for (int i = 0; i < MAX_TABLE_SIZE; i++) table[i] = 0;
 }
 
-DB::~DB() {
+Database::~Database() {
     if (ready) close();
 }
 
-bool DB::isOpen() {
+bool Database::isOpen() {
     return ready;
 }
 
-std::string DB::getDBName() {
+std::string Database::getDBName() {
     return dbName;
 }
 
-void DB::close() {
+void Database::close() {
     assert(ready == 1);
     FILE *file = fopen((dbName + ".db").c_str(), "w");
     fprintf(file, "%d\n", tableSize);
@@ -38,7 +38,7 @@ void DB::close() {
     ready = 0;
 }
 
-void DB::drop() {
+void Database::drop() {
     assert(ready == 1);
     remove((dbName + ".db").c_str());
     for (int i = 0; i < tableSize; i++) {
@@ -51,7 +51,7 @@ void DB::drop() {
     tableSize = 0;
 }
 
-void DB::open(const std::string &name) {
+void Database::open(const std::string &name) {
     assert(ready == 0);
     dbName = name;
     std::ifstream fin((name + ".db").c_str());
@@ -65,7 +65,7 @@ void DB::open(const std::string &name) {
     ready = 1;
 }
 
-void DB::create(const std::string &name) {
+void Database::create(const std::string &name) {
     FILE *file = fopen((name + ".db").c_str(), "w");
     assert(file);
     fclose(file);
@@ -76,7 +76,7 @@ void DB::create(const std::string &name) {
 }
 
 // return 0 if not found
-Table *DB::getTableByName(const std::string &name) {
+Table *Database::getTableByName(const std::string &name) {
     for (int i = 0; i < tableSize; i++)
         if (tableName[i] == name) {
             return table[i];
@@ -84,7 +84,7 @@ Table *DB::getTableByName(const std::string &name) {
     return 0;
 }
 
-Table *DB::createTable(const std::string &name) {
+Table *Database::createTable(const std::string &name) {
     assert(ready == 1);
     tableName[tableSize] = name;
     assert(table[tableSize] == 0);
@@ -94,7 +94,7 @@ Table *DB::createTable(const std::string &name) {
     return table[tableSize - 1];
 }
 
-void DB::dropTableByName(const std::string &name) {
+void Database::dropTableByName(const std::string &name) {
     int p = -1;
     for (int i = 0; i < tableSize; i++)
         if (tableName[i] == name) {
@@ -115,7 +115,7 @@ void DB::dropTableByName(const std::string &name) {
     remove((dbName + "." + name + ".table").c_str());
 }
 
-std::vector<std::string> DB::getTableNames() {
+std::vector<std::string> Database::getTableNames() {
     std::vector<std::string> name;
     for (int i = 0; i < tableSize; i++) {
         name.push_back(tableName[i]);

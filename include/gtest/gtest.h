@@ -1972,7 +1972,7 @@ class TestWithParam : public Test, public WithParamInterface<T> {
 //   EXPECT_NE(5, Foo());
 //   EXPECT_EQ(NULL, a_pointer);
 //   ASSERT_LT(i, array_size);
-//   ASSERT_GT(records.size(), 0) << "There is no record left.";
+//   ASSERT_GT(records.size(), 0) << "There is no backend left.";
 
 #define EXPECT_EQ(expected, actual) \
   EXPECT_PRED_FORMAT2(::testing::internal:: \

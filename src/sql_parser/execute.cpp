@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "execute.h"
 
-#include "record/DB.h"
+#include "backend/Database.h"
 #include "dbms/dbms.h"
 
 void free_column_ref(column_ref *c) {
@@ -68,7 +68,7 @@ void execute_show_tables() {
 }
 
 void execute_create_db(const char *db_name) {
-    DB db;
+    Database db;
     db.create(db_name);
     db.close();
     free((void *) db_name);

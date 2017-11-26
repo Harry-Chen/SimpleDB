@@ -746,9 +746,9 @@ ColumnType Table::getColumnType(int col) {
         while (true) {
           rid = getNext(rid);
           if (rid == -1) return -1;
-          char *record = getRecordTempPtr(rid);
-          if (compareInt(*(int*)(record + head.columnOffset[col]), op, *(int*)data)) {
-            return *(unsigned int*)(record + head.columnOffset[0]);
+          char *backend = getRecordTempPtr(rid);
+          if (compareInt(*(int*)(backend + head.columnOffset[col]), op, *(int*)data)) {
+            return *(unsigned int*)(backend + head.columnOffset[0]);
           }
         }
         break;
@@ -756,9 +756,9 @@ ColumnType Table::getColumnType(int col) {
         while (true) {
           rid = getNext(rid);
           if (rid == -1) return -1;
-          char *record = getRecordTempPtr(rid);
-          if (compareVarchar(record + head.columnOffset[col], op, data)) {
-            return *(unsigned int*)(record + head.columnOffset[0]);
+          char *backend = getRecordTempPtr(rid);
+          if (compareVarchar(backend + head.columnOffset[col], op, data)) {
+            return *(unsigned int*)(backend + head.columnOffset[0]);
           }
         }
         break;

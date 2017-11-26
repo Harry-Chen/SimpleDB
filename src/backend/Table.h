@@ -26,7 +26,7 @@ struct TableHead {
 };
 
 class Table {
-    friend class DB;
+    friend class Database;
 
     TableHead head;
     bool ready;

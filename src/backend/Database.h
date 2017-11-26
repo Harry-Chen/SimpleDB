@@ -2,11 +2,12 @@
 #define __DB_H__
 
 #include <string>
+#include <vector>
 
 #include "../constants.h"
 #include "Table.h"
 
-class DB {
+class Database {
     bool ready;
     std::string tableName[MAX_TABLE_SIZE];
     int tableSize;
@@ -14,9 +15,9 @@ class DB {
     std::string dbName;
 
 public:
-    DB();
+    Database();
 
-    ~DB();
+    ~Database();
 
     bool isOpen();
 

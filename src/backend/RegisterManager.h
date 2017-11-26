@@ -2,6 +2,7 @@
 #define __REGISTER_H__
 
 #include <map>
+#include <cassert>
 
 class Table;
 
