@@ -8,7 +8,7 @@
 #include <map>
 #include <cstring>
 
-#include "dbms.h"
+#include "DBMS.h"
 
 DBMS::DBMS() {
     current = new Database();

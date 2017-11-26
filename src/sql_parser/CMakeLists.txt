@@ -18,7 +18,7 @@ add_library(SqlParser
 set(SOURCE
         ${SOURCE}
         ${CMAKE_CURRENT_SOURCE_DIR}/Expression.cpp
-        ${CMAKE_CURRENT_SOURCE_DIR}/execute.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/Execute.cpp
         PARENT_SCOPE
         )
 
@@ -26,6 +26,6 @@ set(HEADERS
         ${HEADERS}
         ${CMAKE_CURRENT_SOURCE_DIR}/type_def.h
         ${CMAKE_CURRENT_SOURCE_DIR}/Expression.h
-        ${CMAKE_CURRENT_SOURCE_DIR}/execute.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/Execute.h
         PARENT_SCOPE
         )

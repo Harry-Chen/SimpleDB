@@ -1,9 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include "execute.h"
+#include <cstdio>
+#include <cstdlib>
+#include "Execute.h"
 
-#include "backend/Database.h"
-#include "dbms/dbms.h"
+#include "dbms/DBMS.h"
 
 void free_column_ref(column_ref *c) {
     if (c->table)
@@ -44,7 +43,6 @@ void free_values(linked_list *values) {
 }
 
 void free_tables(linked_list *tables) {
-    //TODO: handle JOIN
     while (tables) {
         char *table_name = (char *) tables->data;
         free(table_name);
