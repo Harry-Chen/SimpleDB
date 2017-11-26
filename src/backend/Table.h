@@ -1,6 +1,7 @@
 #ifndef __TABLE_H__
 #define __TABLE_H__
 
+#include "../constants.h"
 #include "Compare.h"
 #include "Index.h"
 

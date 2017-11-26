@@ -7,7 +7,7 @@ Inspired by: https://raw.githubusercontent.com/thinkpad20/sql/master/src/yacc/sq
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "execute.h"
+#include "Execute.h"
 #include "type_def.h"
 
 int yyerror(char *str);
