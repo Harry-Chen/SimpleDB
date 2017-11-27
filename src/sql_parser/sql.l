@@ -61,6 +61,7 @@ or|OR                               { return OR; }
 int|INT                             { return INT; }
 integer|INTEGER                     { return INT; }
 double|DOUBLE                       { return DOUBLE; }
+float|FLOAT                         { return FLOAT; }
 char|CHAR                           { return CHAR; }
 varchar|VARCHAR                     { return VARCHAR; }
 join|JOIN                           { return JOIN; }

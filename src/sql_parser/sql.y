@@ -44,7 +44,7 @@ int yyerror(const char *str);
 %token CREATE SELECT WHERE INSERT INTO FROM
 %token DEFAULT CHECK PRIMARY FOREIGN KEY REFERENCES
 %token GROUP ORDER BY DELETE LIKE SHOW
-%token IDENTIFIER
+%token IDENTIFIER FLOAT
 %token STRING_LITERAL
 %token DOUBLE_LITERAL
 %token INT_LITERAL
@@ -184,6 +184,8 @@ column_dec: IDENTIFIER column_type type_width column_constraints {
 column_type: INT   {$$=COLUMN_TYPE_INT;}
             | CHAR  {$$=COLUMN_TYPE_CHAR;}
             | VARCHAR  {$$=COLUMN_TYPE_VARCHAR;}
+            | FLOAT {$$=COLUMN_TYPE_FLOAT;}
+            | DOUBLE {$$=COLUMN_TYPE_FLOAT;fprintf(stderr, "Warning: type double is decayed to float.\n");}
             ;
 
 type_width: '(' INT_LITERAL ')' {$$ = $2;}
@@ -205,10 +207,10 @@ tb_opt_decs: tb_opt_dec {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data
             | tb_opt_decs ',' tb_opt_dec {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$3;$$->next=$1;}
             ;
 
-tb_opt_dec: PRIMARY KEY  '(' IDENTIFIER ')' {
+tb_opt_dec: PRIMARY KEY '(' column_list ')' {
                 $$=(table_constraint*)calloc(1,sizeof(table_constraint));
                 $$->type = CONSTRAINT_PRIMARY_KEY;
-                $$->column_name = $4;
+                $$->values = $4;
             }
             |CHECK '(' IDENTIFIER IN '(' expr_list ')' ')' {
                 $$=(table_constraint*)calloc(1,sizeof(table_constraint));
@@ -224,6 +226,10 @@ tb_opt_dec: PRIMARY KEY  '(' IDENTIFIER ')' {
                 $$->foreign_column_name = $9;
             }
             ;
+
+column_list: IDENTIFIER {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$1;}
+             | column_list ',' IDENTIFIER {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$3;$$->next=$1;}
+             ;
 
 
 table_refs: table_join {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$1;}

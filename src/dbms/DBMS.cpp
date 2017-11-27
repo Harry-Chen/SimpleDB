@@ -334,7 +334,7 @@ void DBMS::createTable(const table_def *table) {
             case COLUMN_TYPE_VARCHAR:
                 type = CT_VARCHAR;
                 break;
-            case COLUMN_TYPE_DOUBLE:
+            case COLUMN_TYPE_FLOAT:
                 type = CT_FLOAT;
                 break;
         }
@@ -354,16 +354,30 @@ void DBMS::createTable(const table_def *table) {
         int t;
         auto *cons = (table_constraint *) (cons_list->data);
         switch (cons->type) {
-            case CONSTRAINT_PRIMARY_KEY:
-                t = tab->getColumnID(cons->column_name);
-                if (t == -1) {
-                    printf("Column %s not exist\n", cons->column_name);
-                    succeed = false;
-                    break;
+            case CONSTRAINT_PRIMARY_KEY: {
+                // TODO: add support for multiple columns in primary key
+                auto *table_names = cons->values;
+                int count = 0;
+                for (; table_names; table_names = table_names->next) {
+                    ++count;
+                    printf("Column in primary key: %s\n", (char *) table_names->data);
                 }
-                tab->createIndex(t);
-                tab->setPrimary(t);
+                if (count == 1) {
+                    printf("Only one column in primary key.\n");
+                    t = tab->getColumnID((char *) cons->values->data);
+                    if (t == -1) {
+                        printf("Column %s not exist\n", (char *) cons->values->data);
+                        succeed = false;
+                        break;
+                    }
+                    tab->createIndex(t);
+                    tab->setPrimary(t);
+                } else {
+                    printf("Multiple columns in primary key currently not supported.\n");
+                }
+
                 break;
+            }
             case CONSTRAINT_CHECK:
                 t = tab->getColumnID(cons->column_name);
                 if (t == -1) {
