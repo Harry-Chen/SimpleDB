@@ -87,11 +87,16 @@ void execute_create_tb(const table_def *table) {
         linked_list *next = cons->next;
         table_constraint *tc = (table_constraint *) (cons->data);
         free(tc->column_name);
+        if(tc->type == CONSTRAINT_FOREIGN_KEY){
+            free(tc->foreign_column_name);
+            free(tc->foreign_table_name);
+        }
         free_expr_list(tc->values);
         free(tc);
         free(cons);
         cons = next;
     }
+
 }
 
 void execute_drop_db(const char *db_name) {

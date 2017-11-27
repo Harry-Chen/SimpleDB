@@ -1,7 +1,11 @@
 /*
-Creator: Zhang YuXiang
+Author: Harry Chen
+Original Author: Yuxiang Zhang
 Inspired by: https://raw.githubusercontent.com/thinkpad20/sql/master/src/yacc/sql.y
 */
+
+%define parse.error verbose
+
 %{
 #include <ctype.h>
 #include <stdio.h>
@@ -10,7 +14,7 @@ Inspired by: https://raw.githubusercontent.com/thinkpad20/sql/master/src/yacc/sq
 #include "Execute.h"
 #include "type_def.h"
 
-int yyerror(char *str);
+int yyerror(const char *str);
 
 #include "lex.yy.c"
 
@@ -38,7 +42,7 @@ int yyerror(char *str);
 %token UNIQUE IN ON FULL NATURAL VALUES
 %token COUNT SUM AVG MIN MAX DISTINCT TABLE
 %token CREATE SELECT WHERE INSERT INTO FROM
-%token DEFAULT CHECK PRIMARY FOREIGN KEY
+%token DEFAULT CHECK PRIMARY FOREIGN KEY REFERENCES
 %token GROUP ORDER BY DELETE LIKE SHOW
 %token IDENTIFIER
 %token STRING_LITERAL
@@ -115,7 +119,7 @@ use_db_stmt: USE DATABASE db_name {$$=$3;}
             |USE db_name {$$=$2;}
             ;
 
-create_tb_stmt: CREATE TABLE table_name '(' column_decs tb_opt_exist ')' {
+create_tb_stmt: CREATE TABLE table_name '(' column_decs tb_opt_exist')' {
                     $$ = (table_def*)malloc(sizeof(table_def));
                     $$->name = $3;
                     $$->columns = $5;
@@ -212,7 +216,15 @@ tb_opt_dec: PRIMARY KEY  '(' IDENTIFIER ')' {
                 $$->column_name = $3;
                 $$->values = $6;
             }
+            |FOREIGN KEY '(' IDENTIFIER ')' REFERENCES IDENTIFIER '(' IDENTIFIER ')'{
+                $$=(table_constraint*)calloc(1,sizeof(table_constraint));
+                $$->type = CONSTRAINT_FOREIGN_KEY;
+                $$->column_name = $4;
+                $$->foreign_table_name = $7;
+                $$->foreign_column_name = $9;
+            }
             ;
+
 
 table_refs: table_join {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$1;}
             | table_refs ',' table_join {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$3;$$->next=$1;}
@@ -388,7 +400,7 @@ db_name: IDENTIFIER { $$=$1; }
 
 %%
 
-int yyerror(char *str)
+int yyerror(const char *str)
 {
     fprintf(stderr, "Error: %s\n", str);
     return 1;

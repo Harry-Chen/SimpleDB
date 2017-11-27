@@ -58,6 +58,7 @@ enum {
 
 enum {
     CONSTRAINT_PRIMARY_KEY,
+    CONSTRAINT_FOREIGN_KEY,
     CONSTRAINT_CHECK
 };
 
@@ -88,6 +89,8 @@ typedef struct table_def {
 typedef struct table_constraint {
     int type;
     char *column_name;
+    char *foreign_table_name;
+    char *foreign_column_name;
     linked_list *values;
 } table_constraint;
 

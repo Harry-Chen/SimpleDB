@@ -349,10 +349,10 @@ void DBMS::createTable(const table_def *table) {
         }
     }
 
-    linked_list *cons_list = table->constraints;
+    auto *cons_list = table->constraints;
     for (; cons_list; cons_list = cons_list->next) {
         int t;
-        table_constraint *cons = (table_constraint *) (cons_list->data);
+        auto *cons = (table_constraint *) (cons_list->data);
         switch (cons->type) {
             case CONSTRAINT_PRIMARY_KEY:
                 t = tab->getColumnID(cons->column_name);
@@ -391,6 +391,9 @@ void DBMS::createTable(const table_def *table) {
                     }
                 }
                 break;
+            case CONSTRAINT_FOREIGN_KEY:
+                printf("Foreign key: COLUMN %s REFERENCES TABLE %s COLUMN %s\n",
+                       cons->column_name, cons->foreign_table_name, cons->foreign_column_name);
         }
     }
 
