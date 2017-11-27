@@ -44,14 +44,15 @@ int yyerror(const char *str);
 %token CREATE SELECT WHERE INSERT INTO FROM
 %token DEFAULT CHECK PRIMARY FOREIGN KEY REFERENCES
 %token GROUP ORDER BY DELETE LIKE SHOW
-%token IDENTIFIER FLOAT
+%token IDENTIFIER FLOAT DATE
 %token STRING_LITERAL
 %token DOUBLE_LITERAL
 %token INT_LITERAL
+%token DATE_LITERAL
 
 %type <val_s> table_name db_name desc_stmt IDENTIFIER STRING_LITERAL
 %type <val_s> create_db_stmt drop_db_stmt use_db_stmt drop_tb_stmt
-%type <val_s> table_join
+%type <val_s> table_join DATE_LITERAL
 %type <val_d> DOUBLE_LITERAL
 %type <ref_column> column_ref
 %type <val_i> show_stmt column_type column_constraints column_constraint type_width
@@ -182,10 +183,11 @@ column_dec: IDENTIFIER column_type type_width column_constraints {
             ;
 
 column_type: INT   {$$=COLUMN_TYPE_INT;}
-            | CHAR  {$$=COLUMN_TYPE_CHAR;}
+            | CHAR  {$$=COLUMN_TYPE_VARCHAR;}
             | VARCHAR  {$$=COLUMN_TYPE_VARCHAR;}
             | FLOAT {$$=COLUMN_TYPE_FLOAT;}
             | DOUBLE {$$=COLUMN_TYPE_FLOAT;fprintf(stderr, "Warning: type double is decayed to float.\n");}
+            | DATE {$$=COLUMN_TYPE_DATE;}
             ;
 
 type_width: '(' INT_LITERAL ')' {$$ = $2;}
@@ -381,6 +383,11 @@ term: column_ref {
             $$=(expr_node*)calloc(1,sizeof(expr_node));
             $$->literal_s=$1;
             $$->term_type=TERM_STRING;
+        }
+    | DATE_LITERAL {
+            $$=(expr_node*)calloc(1,sizeof(expr_node));
+            $$->literal_s=$1;
+            $$->term_type=TERM_DATE;
         }
     | TOKEN_NULL {
             $$=(expr_node*)calloc(1,sizeof(expr_node));

@@ -158,6 +158,7 @@ ExprVal calcExpression(expr_node *expr) {
     }
     if (!(expr->op & OPER_UNARY) && lv.type != rv.type && lv.type != TERM_NULL)
         throw (int) EXCEPTION_DIFF_TYPE;
+    // TODO add suppoprt for date type
     if (lv.type == TERM_INT) {
         switch (expr->op) {
             case OPER_ADD:

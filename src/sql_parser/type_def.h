@@ -17,7 +17,8 @@ enum {
     COLUMN_TYPE_INT,
     COLUMN_TYPE_CHAR,
     COLUMN_TYPE_VARCHAR,
-    COLUMN_TYPE_FLOAT
+    COLUMN_TYPE_FLOAT,
+    COLUMN_TYPE_DATE
 };
 
 #define OPER_UNARY 0x80
@@ -53,7 +54,8 @@ enum {
     TERM_DOUBLE,
     TERM_BOOL,
     TERM_NULL,
-    TERM_COLUMN
+    TERM_COLUMN,
+    TERM_DATE
 };
 
 enum {

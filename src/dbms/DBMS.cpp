@@ -7,6 +7,7 @@
 #include <iostream>
 #include <map>
 #include <cstring>
+#include <sql_parser/Expression.h>
 
 #include "DBMS.h"
 
@@ -40,6 +41,10 @@ void DBMS::printExprVal(const ExprVal &val) {
             break;
         case TERM_STRING:
             printf("'%s'", val.value.value_s);
+            break;
+        case TERM_DATE:
+            // TODO add support
+            //printf("'%d'", val.value.value_i);
             break;
         case TERM_NULL:
             printf("NULL");
@@ -132,6 +137,9 @@ char *DBMS::ExprType2dbType(const ExprVal &val) {
         case TERM_STRING:
             // printf("string value: %s\n", val.value.value_s);
             ret = (char *) val.value.value_s;
+            break;
+        case TERM_DATE:
+            // TODO add support for date
             break;
         case TERM_NULL:
             // printf("NULL value\n");

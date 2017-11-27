@@ -64,6 +64,7 @@ double|DOUBLE                       { return DOUBLE; }
 float|FLOAT                         { return FLOAT; }
 char|CHAR                           { return CHAR; }
 varchar|VARCHAR                     { return VARCHAR; }
+date|DATE                           { return DATE; }
 join|JOIN                           { return JOIN; }
 inner|INNER                         { return INNER; }
 outer|OUTER                         { return OUTER; }
@@ -96,5 +97,5 @@ distinct|DISTINCT                   { return DISTINCT; }
 ([0-9]+|([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?) { yylval.val_d = atof(yytext); return DOUBLE_LITERAL; }
 [ \t\r\n]+                          { /* ignore */ }
 .                                   { return(yytext[0]);}
-
+((19|20)\d\d)-(0?[1-9]|1[012])-(0?[1-9]|[12][0-9]|3[01]) { yylval.val_s = strdup(yytext); return DATE; }
 %%
