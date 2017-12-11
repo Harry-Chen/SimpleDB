@@ -7,8 +7,9 @@
 #include <iostream>
 #include <map>
 #include <cstring>
-#include <sql_parser/Expression.h>
+#include <iomanip>
 
+#include "sql_parser/Expression.h"
 #include "DBMS.h"
 
 DBMS::DBMS() {
@@ -42,10 +43,12 @@ void DBMS::printExprVal(const ExprVal &val) {
         case TERM_STRING:
             printf("'%s'", val.value.value_s);
             break;
-        case TERM_DATE:
-            // TODO add support
-            //printf("'%d'", val.value.value_i);
+        case TERM_DATE: {
+            auto time = (time_t) val.value.value_i;
+            auto tm = std::localtime(&time);
+            std::cout << std::put_time(tm, DATE_FORMAT);
             break;
+        }
         case TERM_NULL:
             printf("NULL");
             break;
@@ -344,6 +347,9 @@ void DBMS::createTable(const table_def *table) {
                 break;
             case COLUMN_TYPE_FLOAT:
                 type = CT_FLOAT;
+                break;
+            case COLUMN_TYPE_DATE:
+                type = CT_DATE;
                 break;
         }
         int ret = tab->addColumn(column->name, type, column->size,

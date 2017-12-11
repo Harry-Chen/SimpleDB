@@ -2,7 +2,9 @@
 #include <cstring>
 #include <cassert>
 #include <regex>
+#include <iomanip>
 
+#include "constants.h"
 #include "Expression.h"
 
 using namespace std;
@@ -16,7 +18,8 @@ const char *Exception2String[] = {
         "Illegal operator",
         "Unimplemented yet",
         "Column name not unique",
-        "Unknown column"
+        "Unknown column",
+        "Date not valid"
 };
 
 void clean_column_cache() {
@@ -110,6 +113,19 @@ ExprVal term2val(expr_node *expr) {
         case TERM_INT:
             ret.value.value_i = expr->literal_i;
             break;
+        case TERM_DATE: {
+            auto date_literal = expr->literal_s;
+            std::tm tm{};
+            std::stringstream ss(date_literal);
+            ss >> std::get_time(&tm, DATE_FORMAT);
+            if (ss.fail()) {
+                printf("Date not valid: %s\n", date_literal);
+                throw (int) EXCEPTION_DATE_INVALID;
+            }
+            auto time = std::mktime(&tm); // drop the high 32 bits
+            ret.value.value_i = (int) time;
+            break;
+        }
         case TERM_STRING:
             ret.value.value_s = expr->literal_s;
             break;
@@ -158,7 +174,7 @@ ExprVal calcExpression(expr_node *expr) {
     }
     if (!(expr->op & OPER_UNARY) && lv.type != rv.type && lv.type != TERM_NULL)
         throw (int) EXCEPTION_DIFF_TYPE;
-    // TODO add suppoprt for date type
+
     if (lv.type == TERM_INT) {
         switch (expr->op) {
             case OPER_ADD:
@@ -207,6 +223,35 @@ ExprVal calcExpression(expr_node *expr) {
                 break;
             case OPER_ISNULL:
                 result.value.value_b = false;
+                result.type = TERM_BOOL;
+                break;
+            default:
+                throw (int) EXCEPTION_ILLEGAL_OP;
+        }
+    } else if (lv.type == TERM_DATE) {
+        switch (expr->op) {
+            case OPER_EQU:
+                result.value.value_b = lv.value.value_i == rv.value.value_i;
+                result.type = TERM_BOOL;
+                break;
+            case OPER_GT:
+                result.value.value_b = lv.value.value_i > rv.value.value_i;
+                result.type = TERM_BOOL;
+                break;
+            case OPER_GE:
+                result.value.value_b = lv.value.value_i >= rv.value.value_i;
+                result.type = TERM_BOOL;
+                break;
+            case OPER_LT:
+                result.value.value_b = lv.value.value_i < rv.value.value_i;
+                result.type = TERM_BOOL;
+                break;
+            case OPER_LE:
+                result.value.value_b = lv.value.value_i <= rv.value.value_i;
+                result.type = TERM_BOOL;
+                break;
+            case OPER_NEQ:
+                result.value.value_b = lv.value.value_i != rv.value.value_i;
                 result.type = TERM_BOOL;
                 break;
             default:

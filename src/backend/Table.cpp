@@ -200,6 +200,7 @@ int Table::addColumn(const char *name, ColumnType type, int size,
     switch (type) {
         case CT_INT:
         case CT_FLOAT:
+        case CT_DATE:
             head.recordByte += 4;
             if (hasDefault) {
                 head.defaultOffset[id] = head.dataArrUsed;
@@ -269,6 +270,7 @@ int Table::getFastCmp(int rid, int col) {
     float tmp;
     switch (head.columnType[col]) {
         case CT_INT:
+        case CT_DATE:
             res = *(int *) p;
             break;
         case CT_FLOAT:
@@ -390,11 +392,12 @@ std::string Table::genCheckError(int checkId) {
         Check chk = head.checkList[i];
         switch (head.columnType[chk.col]) {
             case CT_INT:
+            case CT_DATE:
                 if (notNull & (1 << chk.col)) {
                     stm << *(int *) (buf + head.columnOffset[chk.col]);
                 } else {
                     stm << "null";
-                }
+                } // TODO parse date to string here
                 stm << opTypeToString(chk.op) << *(int *) (head.dataArr + chk.offset);
                 break;
             case CT_FLOAT:
@@ -430,6 +433,7 @@ bool Table::checkPrimary() {
     char *conf;
     switch (head.columnType[head.primary]) {
         case CT_INT:
+        case CT_DATE:
             return false;
             break;
         case CT_FLOAT:
@@ -465,6 +469,7 @@ std::string Table::checkRecord() {
         } else {
             switch (head.columnType[chk.col]) {
                 case CT_INT:
+                case CT_DATE:
                     tokresult |= compareInt(*(int *) (buf + head.columnOffset[chk.col]), chk.op,
                                             *(int *) (head.dataArr + chk.offset));
                     break;
@@ -537,6 +542,7 @@ void Table::addCheck(int col, OpType op, char *data, RelType relation) {
     switch (head.columnType[col]) {
         case CT_INT:
         case CT_FLOAT:
+        case CT_DATE:
             memcpy(head.dataArr + head.dataArrUsed, data, 4);
             head.dataArrUsed += 4;
             break;
@@ -564,6 +570,7 @@ std::string Table::setTempRecord(int col, const char *data) {
     unsigned int &notNull = *(unsigned int *) buf;
     switch (head.columnType[col]) {
         case CT_INT:
+        case CT_DATE:
         case CT_FLOAT:
             memcpy(buf + head.columnOffset[col], data, 4);
             break;
@@ -572,7 +579,7 @@ std::string Table::setTempRecord(int col, const char *data) {
                 printf("%d %s\n", head.columnLen[col], data);
             }
             if (strlen(data) > head.columnLen[col]) {
-                return "ERROR: var too long";
+                return "ERROR: varchar too long";
             }
             strcpy(buf + head.columnOffset[col], data);
             break;
@@ -783,6 +790,7 @@ char *Table::select(unsigned int rid, int col) {
     }
     switch (head.columnType[col]) {
         case CT_INT:
+        case CT_DATE:
         case CT_FLOAT:
             buf = new char[4];
             memcpy(buf, ptr + getColumnOffset(col), 4);

@@ -2,7 +2,7 @@
 #define __CMP_H__
 
 enum ColumnType {
-    CT_INT, CT_VARCHAR, CT_FLOAT
+    CT_INT, CT_VARCHAR, CT_FLOAT, CT_DATE
 };
 enum OpType {
     OP_EQ, OP_GE, OP_LE, OP_GT, OP_LT
