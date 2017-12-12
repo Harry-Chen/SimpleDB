@@ -4,13 +4,14 @@
 
 #include <vector>
 #include <functional>
+#include <algorithm>
 #include <iostream>
 #include <map>
 #include <cstring>
 #include <iomanip>
+#include <sstream>
 #include <sql_parser/Expression.h>
 
-#include "sql_parser/Expression.h"
 #include "DBMS.h"
 
 DBMS::DBMS() {
@@ -97,6 +98,10 @@ ExprVal DBMS::dbType2ExprType(char *data, ColumnType type) {
             v.type = TERM_DOUBLE;
             v.value.value_d = *(float *) data;
             break;
+        case CT_DATE:
+            v.type = TERM_DATE;
+            v.value.value_i = *(int *) data;
+            break;
         default:
             printf("Error: Unhandled type\n");
             assert(0);
@@ -109,14 +114,13 @@ bool DBMS::checkColumnType(ColumnType type, const ExprVal &val) {
         return true;
     switch (val.type) {
         case TERM_INT:
-            return type == CT_INT;
-            break;
+            return type == CT_INT || type == CT_FLOAT;
         case TERM_DOUBLE:
             return type == CT_FLOAT;
-            break;
         case TERM_STRING:
             return type == CT_VARCHAR;
-            break;
+        case TERM_DATE:
+            return type == CT_DATE;
         default:
             return false;
     }
@@ -187,28 +191,29 @@ DBMS::IDX_TYPE DBMS::checkIndexAvai(Table *tb, int *rid_l, int *rid_u, int *col,
         return IDX_NONE;
     const char *cname = condition->left->column->column;
     int c = tb->getColumnID(cname);
+    /*if(c == -1){
+        c = tb->getColumnID(condition->right->column->column);
+    }*/
     if (c == -1 || !tb->hasIndex(c))
         return IDX_NONE;
     ExprVal v;
     try {
         v = calcExpression(condition->right);
-    } catch (...) {
+    } catch (int err) {
+        printExpName(err);
         return IDX_NONE;
     }
     IDX_TYPE type;
     switch (condition->op) {
         case OPER_EQU:
-            printf("Equal index on `%s`\n", cname);
             type = IDX_EQUAL;
             break;
         case OPER_LT:
         case OPER_LE:
-            printf("Upper index on `%s`\n", cname);
             type = IDX_UPPER;
             break;
         case OPER_GT:
         case OPER_GE:
-            printf("Lowwer index on `%s`\n", cname);
             type = IDX_LOWWER;
             break;
         default:
@@ -238,25 +243,121 @@ int DBMS::nextWithIndex(Table *tb, IDX_TYPE type, int col, int rid, int rid_u) {
 void DBMS::iterateRecords(linked_list *tables, expr_node *condition, std::function<void(Table *, int)> callback) {
     int rid = -1;
     Table *tb = (Table *) tables->data;
-    if (!tables->next)
+    if (!tables->next) { // fallback to one table
         return iterateRecords(tb, condition, callback);
+    }
+    if (!tables->next->next) {
+        if (iterateTwoTableRecords(tb, (Table *) tables->next->data, condition, callback)) {
+            return;
+        }
+    }
     while ((rid = tb->getNext(rid)) != -1) {
         cacheColumns(tb, rid);
         iterateRecords(tables->next, condition, callback);
     }
 }
 
+bool
+DBMS::iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, std::function<void(Table *, int)> callback) {
+    int rid_a = -1, rid_l_a, col_a;
+    int rid_b = -1, rid_l_b, col_b;
+
+    auto orig_cond = condition;
+
+    condition = condition->left;
+
+    if (condition->left->term_type != TERM_COLUMN) {
+        return false;
+    }
+    std::vector<std::string> names;
+    std::istringstream f(a->getTableName());
+    std::string s;
+    while (std::getline(f, s, '.')) {
+        names.push_back(s);
+    }
+    if (names.at(1) != std::string(condition->left->column->table)) {
+        // reverse a and b
+        Table *temp = a;
+        a = b;
+        b = temp;
+    }
+
+    printf("A: %s, B: %s\n", a->getTableName().c_str(), b->getTableName().c_str());
+
+    col_a = a->getColumnID(condition->left->column->column);
+    col_b = b->getColumnID(condition->right->column->column);
+
+    bool index_a = (col_a != -1 && a->hasIndex(col_a));
+    bool index_b = (col_b != -1 && b->hasIndex(col_b));
+
+    if (index_a && index_b) goto index_both;
+    else if (index_a) goto index_a;
+    else if (index_b) goto index_b;
+    else {
+        printf("No index on either %s or %s\n", a->getTableName().c_str(), b->getTableName().c_str());
+        return false;
+    }
+
+#define iterateUseIndex(x, y) cacheColumns(x, rid_##x);\
+    auto v = calcExpression(condition->left);\
+    auto data = ExprType2dbType(v);\
+    rid_l_##y = y->selectIndexLowerBoundEqual(col_##y, data);\
+    rid_##y = rid_l_##y;\
+    for (; rid_##y != -1; rid_##y = y->selectIndexNextEqual(col_##y, data)) {\
+        cacheColumns(y, rid_##y);\
+        if (condition) {\
+            ExprVal val_cond;\
+            bool cond;\
+            try {\
+                val_cond = calcExpression(orig_cond);\
+                cond = convert2Bool(val_cond);\
+            } catch (int err) {\
+                printExpName(err);\
+                break;\
+            } catch (...) {\
+                printf("Exception occur %d\n", __LINE__);\
+                break;\
+            }\
+            if (!cond)\
+                continue;\
+        }\
+        callback(y, rid_##y);\
+    }
+
+    index_both:
+    printf("Using index on both %s and %s\n", a->getTableName().c_str(), b->getTableName().c_str());
+    rid_a = a->selectIndexLowerBoundNull(col_a);
+    for (; rid_a != -1; rid_a = a->selectIndexNext(col_a)) {
+        iterateUseIndex(a, b);
+    }
+    return true;
+
+#define useIndex(x, y) printf("Using index on %s, iterating %s\n", x->getTableName().c_str(), y->getTableName().c_str());\
+    while ((rid_##y = y->getNext(rid_##y)) != -1) { \
+        iterateUseIndex(y, x); \
+} \
+return true;
+
+
+    index_a:
+useIndex(a, b);
+
+    index_b:
+useIndex(b, a);
+}
+
+
 void DBMS::iterateRecords(Table *tb, expr_node *condition, std::function<void(Table *, int)> callback) {
     int rid = -1, rid_u;
     int col;
-    // printf("table %s\n", tb->getTableName().c_str());
+    //printf("table %s\n", tb->getTableName().c_str());
     IDX_TYPE idx = checkIndexAvai(tb, &rid, &rid_u, &col, condition);
     if (idx == IDX_NONE)
         rid = tb->getNext(-1);
-    // printf("[%d,%d]\n", rid,rid_u);
+    //printf("[%d,%d]\n", rid,rid_u);
     for (; rid != -1; rid = nextWithIndex(tb, idx, col, rid, rid_u)) {
         cacheColumns(tb, rid);
-        // printf("rid=%d\n", rid);
+        //printf("rid=%d\n", rid);
         if (condition) {
             ExprVal val_cond;
             bool cond;
@@ -265,13 +366,15 @@ void DBMS::iterateRecords(Table *tb, expr_node *condition, std::function<void(Ta
                 cond = convert2Bool(val_cond);
             } catch (int err) {
                 printExpName(err);
+                return;
             } catch (...) {
                 printf("Exception occur %d\n", __LINE__);
+                return;
             }
             if (!cond)
                 continue;
         }
-        printf("RID=%d match\n", rid);
+        //printf("RID=%d match\n", rid);
         callback(tb, rid);
     }
 
@@ -358,7 +461,7 @@ void DBMS::createTable(const table_def *table) {
                                  column->flags & COLUMN_FLAG_DEFAULT,
                                  0);
         if (ret == -1) {
-            printf("column %s duplicated\n", column->name);
+            printf("Column %s duplicated\n", column->name);
             succeed = false;
             break;
         }
@@ -420,6 +523,7 @@ void DBMS::createTable(const table_def *table) {
                     }
                 }
                 break;
+                // TODO: add support for foreign key constraint
             case CONSTRAINT_FOREIGN_KEY:
                 printf("Foreign key: COLUMN %s REFERENCES TABLE %s COLUMN %s\n",
                        cons->column_name, cons->foreign_table_name, cons->foreign_column_name);
@@ -440,9 +544,9 @@ void DBMS::dropDB(const char *db_name) {
     db.open(db_name);
     if (db.isOpen()) {
         db.drop();
-        printf("database %s dropped!\n", db_name);
+        printf("Database %s dropped!\n", db_name);
     } else {
-        printf("failed to open database %s\n", db_name);
+        printf("Failed to open database %s\n", db_name);
     }
 }
 
@@ -450,7 +554,7 @@ void DBMS::dropTable(const char *table) {
     if (!requireDbOpen())
         return;
     current->dropTableByName(table);
-    printf("%s dropped!\n", table);
+    printf("Table %s dropped!\n", table);
 }
 
 void DBMS::listTables() {
@@ -489,25 +593,25 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
     }
     flags = isAggregate(column_expr);
     if (flags == 3) {
-        printf("Error: Both aggregate function and non-aggregate column exist\n");
+        printf("Error: Cannot mix aggregate functions and non-aggregate columns in one query\n");
         return;
     }
     clean_column_cache();
     if (flags == 2) { //aggregate functions only
         std::map<int, ExprVal> aggregate_buf;
         std::map<int, int> rowCount;
-        iterateRecords(openedTables, condition,
-                       [&rowCount, &aggregate_buf, &column_expr, this](Table *tb, int rid) -> void {
-                           int col = 0;
-                           for (const linked_list *j = column_expr; j; j = j->next, col++) {
-                               expr_node *node = (expr_node *) j->data;
-                               ExprVal val;
-                               try {
+        try {
+            iterateRecords(openedTables, condition,
+                           [&rowCount, &aggregate_buf, &column_expr, this](Table *tb, int rid) -> void {
+                               int col = 0;
+                               for (const linked_list *j = column_expr; j; j = j->next, col++) {
+                                   expr_node *node = (expr_node *) j->data;
+                                   ExprVal val;
                                    val = calcExpression(node->left);
                                    if (val.type != TERM_NULL) {
                                        rowCount[col]++;
                                        if (!aggregate_buf.count(col)) {
-                                           printf("rid=%d [%d] first\n", rid, col);
+                                           //printf("rid=%d [%d] first\n", rid, col);
                                            aggregate_buf[col] = (val);
                                        } else {
                                            switch (node->op) {
@@ -526,15 +630,16 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
                                            }
                                        }
                                    }
-                               } catch (int err) {
-                                   printExpName(err);
-                                   return;
-                               } catch (...) {
-                                   printf("Exception occur %d\n", __LINE__);
-                                   return;
+
                                }
-                           }
-                       });
+                           });
+        } catch (int err) {
+            printExpName(err);
+            return;
+        } catch (...) {
+            printf("Exception occur %d\n", __LINE__);
+            return;
+        }
         int col = 0;
         printf("| ");
         for (const linked_list *j = column_expr; j; j = j->next, col++) {
@@ -555,7 +660,8 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
         freeLinkedList(openedTables);
         return;
     }
-    iterateRecords(openedTables, condition, [&column_expr, this](Table *tb, int rid) -> void {
+    int count = 0;
+    iterateRecords(openedTables, condition, [&column_expr, &count, this](Table *tb, int rid) -> void {
         std::vector<ExprVal> output_buf;
         if (!column_expr) { //select *
             for (int i = tb->getColumnCount() - 1; i > 0; --i) {
@@ -589,7 +695,9 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
             printf(" | ");
         }
         printf("\n");
+        count++;
     });
+    printf("%d rows in query.\n", count);
     freeCacheColumns();
     freeLinkedList(openedTables);
 }
@@ -609,24 +717,28 @@ void DBMS::updateRow(const char *table, expr_node *condition, column_ref *column
         printf("Column %s not found\n", column->column);
         return;
     }
-
-    iterateRecords(tb, condition, [&col_to_update, &eval, this](Table *tb, int rid) -> void {
-        ExprVal newval;
-        try {
+    int count = 0;
+    try {
+        iterateRecords(tb, condition, [&col_to_update, &eval, &count, this](Table *tb, int rid) -> void {
+            ExprVal newval;
             newval = calcExpression(eval);
             printf("t=%d\n", tb->getColumnType(col_to_update));
             if (!checkColumnType(tb->getColumnType(col_to_update), newval)) {
                 printf("Wrong data type\n");
-                return;
+                throw (int) EXCEPTION_WRONG_DATA_TYPE;
             }
             std::string ret = tb->modifyRecord(rid, col_to_update, ExprType2dbType(newval));
-            std::cout << ret << std::endl;
-        } catch (int err) {
-            printExpName(err);
-        } catch (...) {
-            printf("Exception occur %d\n", __LINE__);
-        }
-    });
+            if (ret != "") {
+                std::cout << ret << std::endl;
+            }
+            ++count;
+        });
+    } catch (int err) {
+        printExpName(err);
+    } catch (...) {
+        printf("Exception occur %d\n", __LINE__);
+    }
+    printf("%d rows updated.\n", count);
     freeCacheColumns();
 }
 
@@ -645,6 +757,7 @@ void DBMS::deleteRow(const char *table, expr_node *condition) {
     for (auto i = toBeDeleted.begin(); i != toBeDeleted.end(); ++i) {
         tb->dropRecord(*i);
     }
+    printf("%d rows deleted.\n", (int) toBeDeleted.size());
     freeCacheColumns();
 }
 
@@ -670,15 +783,16 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
                 return;
             }
             int id = tb->getColumnID(col->column);
-            printf("column %s id=%d\n", col->column, id);
+            printf("Column %s id=%d\n", col->column, id);
             if (id < 0) {
                 printf("Column %s not found\n", col->column);
                 return;
             }
             colId.push_back(id);
         }
-    printf("insert into %lu columns\n", colId.size());
+    printf("Inserting into %lu columns\n", colId.size());
     tb->clearTempRecord();
+    int count = 0;
     for (const linked_list *i = values; i; i = i->next) {
         const linked_list *expr_list = (linked_list *) i->data;
         int cnt = 0;
@@ -686,10 +800,10 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
             cnt++;
         }
         if (cnt != colId.size()) {
-            printf("column size mismatch, skipped (value size=%d)\n", cnt);
+            printf("Column size mismatch, will not execute (value size=%d)\n", cnt);
             continue;
         }
-        printf("insert one row...\n");
+        //printf("Insert one row...\n");
         auto it = colId.begin();
         std::string result;
         for (const linked_list *j = expr_list; j; j = j->next) {
@@ -702,10 +816,11 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
                 return;
             } catch (...) {
                 printf("Exception occur %d\n", __LINE__);
+                return;
             }
-            printf("column [%d] value ", *it);
-            printExprVal(val);
-            putchar('\n');
+            //printf("Column [%d] value ", *it);
+            //printExprVal(val);
+            //putchar('\n');
             if (!checkColumnType(tb->getColumnType(*it), val)) {
                 printf("Wrong data type\n");
                 return;
@@ -718,10 +833,14 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
             ++it;
         }
         result = tb->insertTempRecord();
-        if (!result.empty())
+        if (!result.empty()) {
             std::cout << result << std::endl;
+        } else {
+            ++count;
+        }
         next_rec:;
     }
+    printf("%d rows inserted.\n", count);
 }
 
 void DBMS::createIndex(column_ref *tb_col) {

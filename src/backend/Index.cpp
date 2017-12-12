@@ -82,6 +82,14 @@ int Index::next() {
     return iter->getRid();
 }
 
+int Index::nextEqual(const IndexKey &key){
+    if (iter == list.end()) return -1;
+    iter++;
+    if (iter == list.end()) return -1;
+    if (iter->getFastCmp() == key.getFastCmp()) return iter->getRid();
+    return -1;
+}
+
 int Index::reversedNext() {
     if (iter == list.begin()) return -1;
     iter--;

@@ -45,14 +45,14 @@ int yyerror(const char *str);
 %token DEFAULT CHECK PRIMARY FOREIGN KEY REFERENCES
 %token GROUP ORDER BY DELETE LIKE SHOW
 %token IDENTIFIER FLOAT DATE
+%token DATE_LITERAL
 %token STRING_LITERAL
 %token DOUBLE_LITERAL
 %token INT_LITERAL
-%token DATE_LITERAL
 
-%type <val_s> table_name db_name desc_stmt IDENTIFIER STRING_LITERAL
+%type <val_s> table_name db_name desc_stmt IDENTIFIER STRING_LITERAL DATE_LITERAL
 %type <val_s> create_db_stmt drop_db_stmt use_db_stmt drop_tb_stmt
-%type <val_s> table_join DATE_LITERAL
+%type <val_s> table_join
 %type <val_d> DOUBLE_LITERAL
 %type <ref_column> column_ref
 %type <val_i> show_stmt column_type column_constraints column_constraint type_width
@@ -379,15 +379,15 @@ term: column_ref {
             $$->literal_d=$1;
             $$->term_type=TERM_DOUBLE;
         }
-    | STRING_LITERAL {
-            $$=(expr_node*)calloc(1,sizeof(expr_node));
-            $$->literal_s=$1;
-            $$->term_type=TERM_STRING;
-        }
     | DATE_LITERAL {
             $$=(expr_node*)calloc(1,sizeof(expr_node));
             $$->literal_s=$1;
             $$->term_type=TERM_DATE;
+        }
+    | STRING_LITERAL {
+            $$=(expr_node*)calloc(1,sizeof(expr_node));
+            $$->literal_s=$1;
+            $$->term_type=TERM_STRING;
         }
     | TOKEN_NULL {
             $$=(expr_node*)calloc(1,sizeof(expr_node));
@@ -406,6 +406,7 @@ column_ref: IDENTIFIER {$$=(column_ref*)calloc(1,sizeof(column_ref));$$->table =
     ;
 
 table_name: IDENTIFIER {$$ = $1;}
+        | '`' IDENTIFIER '`' {$$ = $2;}
         ;
 
 db_name: IDENTIFIER { $$=$1; }

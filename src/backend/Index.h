@@ -60,6 +60,8 @@ public:
 
     int next();
 
+    int nextEqual(const IndexKey &key);
+
     int reversedNext();
 };
 

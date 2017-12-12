@@ -36,6 +36,8 @@ class DBMS {
 
     int nextWithIndex(Table *tb, IDX_TYPE type, int col, int rid, int rid_u);
 
+    bool iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, std::function<void(Table *, int)> callback);
+
     void iterateRecords(linked_list *tables, expr_node *condition, std::function<void(Table *, int)> callback);
 
     void iterateRecords(Table *tb, expr_node *condition, std::function<void(Table *, int)> callback);

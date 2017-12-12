@@ -150,9 +150,13 @@ public:
 
     int selectIndexLowerBound(int col, const char *data);
 
+    int selectIndexLowerBoundEqual(int col, const char *data);
+
     int selectIndexLowerBoundNull(int col);
 
     int selectIndexNext(int col);
+
+    int selectIndexNextEqual(int col, const char* data);
 
     int selectIndexUpperBound(int col, const char *data);
 

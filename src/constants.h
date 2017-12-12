@@ -20,6 +20,6 @@
 //----------------------Database-----------------------------------------
 #define MAX_TABLE_SIZE 32
 
-#define DATE_FORMAT "%Y/%m/%d"
+#define DATE_FORMAT "%Y-%m-%d"
 
 #endif

@@ -19,7 +19,8 @@ const char *Exception2String[] = {
         "Unimplemented yet",
         "Column name not unique",
         "Unknown column",
-        "Date not valid"
+        "Date not valid",
+        "Wrong data type"
 };
 
 void clean_column_cache() {
@@ -116,13 +117,19 @@ ExprVal term2val(expr_node *expr) {
         case TERM_DATE: {
             auto date_literal = expr->literal_s;
             std::tm tm{};
-            std::stringstream ss(date_literal);
+            std::string date(date_literal);
+            std::stringstream ss(date);
             ss >> std::get_time(&tm, DATE_FORMAT);
+            auto tm_orig = tm;
             if (ss.fail()) {
                 printf("Date not valid: %s\n", date_literal);
                 throw (int) EXCEPTION_DATE_INVALID;
             }
             auto time = std::mktime(&tm); // drop the high 32 bits
+            if(tm_orig.tm_mday != tm.tm_mday){
+                printf("Date not valid: %s\n", date_literal);
+                throw (int) EXCEPTION_DATE_INVALID;
+            }
             ret.value.value_i = (int) time;
             break;
         }
@@ -194,6 +201,7 @@ ExprVal calcExpression(expr_node *expr) {
                 result.type = TERM_INT;
                 break;
             case OPER_EQU:
+                //printf("Left: %d, Right: %d\n", lv.value.value_i, rv.value.value_i);
                 result.value.value_b = lv.value.value_i == rv.value.value_i;
                 result.type = TERM_BOOL;
                 break;

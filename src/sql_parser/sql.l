@@ -27,6 +27,12 @@ char *strndup (const char *s, size_t n)
 
 %}
 
+DATE_FORMAT     '[0-9]+-[0-9]+-[0-9]+'
+ID_FORMAT       [a-zA-Z][a-zA-Z0-9_]*
+STRING_FORMAT   '(\\\\|\\n|\\r|\\\"|\\0|\\'|[^'\\])*'
+INT_FORMAT      [0-9]+
+FLOAT_FORMAT    [0-9]+|([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?
+
 %%
 
 create|CREATE                       { return CREATE; }
@@ -91,11 +97,11 @@ true|TRUE                           { return TRUE; }
 false|FALSE                         { return FALSE; }
 group|GROUP                         { return GROUP; }
 distinct|DISTINCT                   { return DISTINCT; }
-[a-zA-Z][a-zA-Z0-9_]*               { yylval.val_s = strdup(yytext); return IDENTIFIER; }
-('(\\\\|\\n|\\r|\\\"|\\0|\\'|[^'\\])*') { yylval.val_s = strndup(yytext + 1, strlen(yytext) - 2); return STRING_LITERAL; }
-[0-9]+                              { yylval.val_i = atoi(yytext); return INT_LITERAL; }
-([0-9]+|([0-9]*\.[0-9]+)([eE][-+]?[0-9]+)?) { yylval.val_d = atof(yytext); return DOUBLE_LITERAL; }
+{ID_FORMAT}                         { yylval.val_s = strdup(yytext); return IDENTIFIER; }
+{DATE_FORMAT}                       { yylval.val_s = strndup(yytext + 1, strlen(yytext) - 2); return DATE_LITERAL;}
+{STRING_FORMAT}                     { yylval.val_s = strndup(yytext + 1, strlen(yytext) - 2); return STRING_LITERAL; }
+{INT_FORMAT}                        { yylval.val_i = atoi(yytext); return INT_LITERAL; }
+{FLOAT_FORMAT}                      { yylval.val_d = atof(yytext); return DOUBLE_LITERAL; }
 [ \t\r\n]+                          { /* ignore */ }
 .                                   { return(yytext[0]);}
-((19|20)\d\d)-(0?[1-9]|1[012])-(0?[1-9]|[12][0-9]|3[01]) { yylval.val_s = strdup(yytext); return DATE; }
 %%

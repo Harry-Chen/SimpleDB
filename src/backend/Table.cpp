@@ -28,11 +28,11 @@ bool operator<(const IndexKey &a, const IndexKey &b) {
     int tmp;
     switch (tp) {
         case CT_INT:
+        case CT_DATE:
             tmp = sgn(a.fastCmp - b.fastCmp);
             if (tmp == -1) return true;
             if (tmp == 1) return false;
             return a.rid < b.rid;
-            break;
         case CT_VARCHAR:
         case CT_FLOAT:
             tmp = sgn(a.fastCmp - b.fastCmp);
@@ -70,6 +70,7 @@ void Table::initTempRecord() {
             switch (head.columnType[i]) {
                 case CT_INT:
                 case CT_FLOAT:
+                case CT_DATE:
                     memcpy(buf + head.columnOffset[i], head.dataArr + head.defaultOffset[i], 4);
                     break;
                 case CT_VARCHAR:
@@ -134,6 +135,9 @@ void Table::printSchema() {
                 break;
             case CT_FLOAT:
                 printf(" FLOAT");
+                break;
+            case CT_DATE:
+                printf(" DATE");
                 break;
             case CT_VARCHAR:
                 printf(" VARCHAR(%d)", head.columnLen[i]);
@@ -226,14 +230,14 @@ int Table::addColumn(const char *name, ColumnType type, int size,
 }
 
 void Table::createIndex(int col) {
-    assert(head.pageTot == 1);
+    //assert(head.pageTot == 1);
     assert((head.hasIndex & (1 << col)) == 0);
     head.hasIndex |= 1 << col;
 }
 
 void Table::dropIndex(int col) {
     assert((head.hasIndex & (1 << col)));
-    head.hasIndex ^= 1 << col;
+    head.hasIndex &= ~(1 << col);
     colIndex[col].drop(permID, col);
 }
 
@@ -813,6 +817,15 @@ int Table::selectIndexLowerBound(int col, const char *data) {
     return colIndex[col].lowerbound(IndexKey(permID, -1, col, getFastCmp(-1, col), getIsNull(-1, col)));
 }
 
+int Table::selectIndexLowerBoundEqual(int col, const char *data) {
+    if (data == 0) {
+        return selectIndexLowerBoundNull(col);
+    }
+    assert(hasIndex(col));
+    setTempRecord(col, data);
+    return colIndex[col].lowerboundEqual(IndexKey(permID, -1, col, getFastCmp(-1, col), getIsNull(-1, col)));
+}
+
 int Table::selectIndexLowerBoundNull(int col) {
     assert(hasIndex(col));
     return colIndex[col].begin();
@@ -821,6 +834,11 @@ int Table::selectIndexLowerBoundNull(int col) {
 int Table::selectIndexNext(int col) {
     assert(hasIndex(col));
     return colIndex[col].next();
+}
+
+int Table::selectIndexNextEqual(int col, const char* data){
+    assert(hasIndex(col));
+    return colIndex[col].nextEqual(IndexKey(permID, -1, col, getFastCmp(-1, col), getIsNull(-1, col)));
 }
 
 int Table::selectIndexUpperBound(int col, const char *data) {
