@@ -16,7 +16,7 @@ Inspired by: https://raw.githubusercontent.com/thinkpad20/sql/master/src/yacc/sq
 
 int yyerror(const char *str);
 
-#include "lex.yy.c"
+#include "sql.yy.c"
 
 %}
 %union {
@@ -228,10 +228,6 @@ tb_opt_dec: PRIMARY KEY '(' column_list ')' {
                 $$->foreign_column_name = $9;
             }
             ;
-
-column_list: IDENTIFIER {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$1;}
-             | column_list ',' IDENTIFIER {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$3;$$->next=$1;}
-             ;
 
 
 table_refs: table_join {$$=(linked_list*)calloc(1,sizeof(linked_list));$$->data=$1;}

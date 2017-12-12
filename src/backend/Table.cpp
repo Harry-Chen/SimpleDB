@@ -439,7 +439,6 @@ bool Table::checkPrimary() {
         case CT_INT:
         case CT_DATE:
             return false;
-            break;
         case CT_FLOAT:
             conf = select(rid, head.primary);
             if (*(float *) conf == *(float *) (buf + head.columnOffset[head.primary])) return false;

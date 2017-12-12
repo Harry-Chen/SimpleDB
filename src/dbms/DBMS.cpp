@@ -26,7 +26,7 @@ bool DBMS::requireDbOpen() {
     return true;
 }
 
-void DBMS::printExpName(int err) {
+void DBMS::printReadableException(int err) {
     printf("Exception: ");
     printf("%s\n", Exception2String[err]);
 }
@@ -57,7 +57,7 @@ void DBMS::printExprVal(const ExprVal &val) {
     }
 }
 
-bool DBMS::convert2Bool(const ExprVal &val) {
+bool DBMS::convertToBool(const ExprVal &val) {
     bool t = false;
     switch (val.type) {
         case TERM_INT:
@@ -79,7 +79,7 @@ bool DBMS::convert2Bool(const ExprVal &val) {
     return t;
 }
 
-ExprVal DBMS::dbType2ExprType(char *data, ColumnType type) {
+ExprVal DBMS::dbTypeToExprType(char *data, ColumnType type) {
     ExprVal v;
 
     if (data == NULL) {
@@ -126,7 +126,7 @@ bool DBMS::checkColumnType(ColumnType type, const ExprVal &val) {
     }
 }
 
-char *DBMS::ExprType2dbType(const ExprVal &val) {
+char *DBMS::ExprTypeToDbType(const ExprVal &val) {
     char *ret;
     //TODO: data type convert here, e.g. double->int
     switch (val.type) {
@@ -151,7 +151,7 @@ char *DBMS::ExprType2dbType(const ExprVal &val) {
             break;
         case TERM_NULL:
             // printf("NULL value\n");
-            ret = NULL;
+            ret = nullptr;
             break;
         default:
             printf("Error: Unhandled type\n");
@@ -170,20 +170,20 @@ void DBMS::cacheColumns(Table *tb, int rid) {
         char *tmp = tb->select(rid, i);
         update_column_cache(tb->getColumnName(i),
                             tb_name.c_str(),
-                            dbType2ExprType(tmp, tb->getColumnType(i))
+                            dbTypeToExprType(tmp, tb->getColumnType(i))
         );
         pendingFree.push_back(tmp);
     }
 }
 
-void DBMS::freeCacheColumns() {
+void DBMS::freeCachedColumns() {
     for (auto i = pendingFree.begin(); i != pendingFree.end(); ++i) {
         delete (*i);
     }
     pendingFree.clear();
 }
 
-DBMS::IDX_TYPE DBMS::checkIndexAvai(Table *tb, int *rid_l, int *rid_u, int *col, expr_node *condition) {
+DBMS::IDX_TYPE DBMS::checkIndexAvailability(Table *tb, int *rid_l, int *rid_u, int *col, expr_node *condition) {
     //TODO: complex conditions
     if (condition && condition->term_type == TERM_NONE && condition->op == OPER_AND)
         condition = condition->left;
@@ -200,7 +200,7 @@ DBMS::IDX_TYPE DBMS::checkIndexAvai(Table *tb, int *rid_l, int *rid_u, int *col,
     try {
         v = calcExpression(condition->right);
     } catch (int err) {
-        printExpName(err);
+        printReadableException(err);
         return IDX_NONE;
     }
     IDX_TYPE type;
@@ -221,8 +221,8 @@ DBMS::IDX_TYPE DBMS::checkIndexAvai(Table *tb, int *rid_l, int *rid_u, int *col,
     }
     if (type != IDX_NONE) {
         *col = c;
-        *rid_u = tb->selectIndexUpperBound(c, ExprType2dbType(v));
-        *rid_l = tb->selectIndexLowerBound(c, ExprType2dbType(v));
+        *rid_u = tb->selectIndexUpperBound(c, ExprTypeToDbType(v));
+        *rid_l = tb->selectIndexLowerBound(c, ExprTypeToDbType(v));
     }
     return type;
 }
@@ -300,7 +300,7 @@ DBMS::iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, std::func
 
 #define iterateUseIndex(x, y) cacheColumns(x, rid_##x);\
     auto v = calcExpression(condition->left);\
-    auto data = ExprType2dbType(v);\
+    auto data = ExprTypeToDbType(v);\
     rid_l_##y = y->selectIndexLowerBoundEqual(col_##y, data);\
     rid_##y = rid_l_##y;\
     for (; rid_##y != -1; rid_##y = y->selectIndexNextEqual(col_##y, data)) {\
@@ -310,9 +310,9 @@ DBMS::iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, std::func
             bool cond;\
             try {\
                 val_cond = calcExpression(orig_cond);\
-                cond = convert2Bool(val_cond);\
+                cond = convertToBool(val_cond);\
             } catch (int err) {\
-                printExpName(err);\
+                printReadableException(err);\
                 break;\
             } catch (...) {\
                 printf("Exception occur %d\n", __LINE__);\
@@ -350,22 +350,19 @@ useIndex(b, a);
 void DBMS::iterateRecords(Table *tb, expr_node *condition, std::function<void(Table *, int)> callback) {
     int rid = -1, rid_u;
     int col;
-    //printf("table %s\n", tb->getTableName().c_str());
-    IDX_TYPE idx = checkIndexAvai(tb, &rid, &rid_u, &col, condition);
+    IDX_TYPE idx = checkIndexAvailability(tb, &rid, &rid_u, &col, condition);
     if (idx == IDX_NONE)
         rid = tb->getNext(-1);
-    //printf("[%d,%d]\n", rid,rid_u);
     for (; rid != -1; rid = nextWithIndex(tb, idx, col, rid, rid_u)) {
         cacheColumns(tb, rid);
-        //printf("rid=%d\n", rid);
         if (condition) {
             ExprVal val_cond;
             bool cond;
             try {
                 val_cond = calcExpression(condition);
-                cond = convert2Bool(val_cond);
+                cond = convertToBool(val_cond);
             } catch (int err) {
-                printExpName(err);
+                printReadableException(err);
                 return;
             } catch (...) {
                 printf("Exception occur %d\n", __LINE__);
@@ -374,7 +371,6 @@ void DBMS::iterateRecords(Table *tb, expr_node *condition, std::function<void(Ta
             if (!cond)
                 continue;
         }
-        //printf("RID=%d match\n", rid);
         callback(tb, rid);
     }
 
@@ -440,7 +436,7 @@ void DBMS::createTable(const table_def *table) {
         column_rev.push_back(column);
     }
     for (auto i = column_rev.rbegin(); i != column_rev.rend(); ++i) {
-        ColumnType type;
+        auto type = (ColumnType)0;
         column = *i;
         switch (column->type) {
             case COLUMN_TYPE_INT:
@@ -476,22 +472,32 @@ void DBMS::createTable(const table_def *table) {
                 // TODO: add support for multiple columns in primary key
                 auto *table_names = cons->values;
                 int count = 0;
-                for (; table_names; table_names = table_names->next) {
-                    ++count;
-                    printf("Column in primary key: %s\n", (char *) table_names->data);
-                }
-                if (count == 1) {
-                    printf("Only one column in primary key.\n");
-                    t = tab->getColumnID((char *) cons->values->data);
+                if (!table_names->next) {
+                    auto column_name = ((column_ref *) table_names->data)->column;
+                    printf("Primary key constraint: Column in primary key: %s\n", column_name);
+                    t = tab->getColumnID(column_name);
                     if (t == -1) {
-                        printf("Column %s not exist\n", (char *) cons->values->data);
+                        printf("Primary key constraint: Column %s does not exist\n", column_name);
                         succeed = false;
                         break;
                     }
                     tab->createIndex(t);
                     tab->setPrimary(t);
                 } else {
-                    printf("Multiple columns in primary key currently not supported.\n");
+                    for (; table_names; table_names = table_names->next) {
+                        ++count;
+                        auto column_name = ((column_ref *) table_names->data)->column;
+                        printf("Primary key constraint: Column in primary key: %s\n", column_name);
+                        t = tab->getColumnID(column_name);
+                        if (t == -1) {
+                            printf("Primary key constraint: Column %s does not exist\n", column_name);
+                            succeed = false;
+                            break;
+                        }
+                        tab->createIndex(t);
+                    }
+                    printf("Primary key constraint: Multiple columns in primary key. Primary key set to UID\n");
+
                 }
 
                 break;
@@ -499,7 +505,7 @@ void DBMS::createTable(const table_def *table) {
             case CONSTRAINT_CHECK:
                 t = tab->getColumnID(cons->column_name);
                 if (t == -1) {
-                    printf("Column %s not exist\n", cons->column_name);
+                    printf("Value constraint: Column %s does not exist\n", cons->column_name);
                     succeed = false;
                     break;
                 }
@@ -511,22 +517,44 @@ void DBMS::createTable(const table_def *table) {
                         try {
                             val = calcExpression(node);
                         } catch (int err) {
-                            printExpName(err);
+                            printReadableException(err);
                             return;
                         } catch (...) {
                             printf("Exception occur %d\n", __LINE__);
                         }
-                        tab->addCheck(t, OP_EQ, ExprType2dbType(val), RE_OR);
-                        printf("CHECK: column %d val ", t);
+                        tab->addCheck(t, OP_EQ, ExprTypeToDbType(val), RE_OR);
+                        printf("Value constraint: Column %s must be ", cons->column_name);
                         printExprVal(val);
                         putchar('\n');
                     }
                 }
                 break;
-                // TODO: add support for foreign key constraint
-            case CONSTRAINT_FOREIGN_KEY:
+            case CONSTRAINT_FOREIGN_KEY: {
                 printf("Foreign key: COLUMN %s REFERENCES TABLE %s COLUMN %s\n",
                        cons->column_name, cons->foreign_table_name, cons->foreign_column_name);
+                t = tab->getColumnID(cons->column_name);
+                if (t == -1) {
+                    printf("Foreign key constraint: Column %s does not exist\n", cons->column_name);
+                    succeed = false;
+                    break;
+                }
+                auto foreign_table = current->getTableByName(cons->foreign_table_name);
+                if (foreign_table == nullptr) {
+                    printf("Foreign key constraint: Foreign table %s does not exist\n", cons->foreign_table_name);
+                    succeed = false;
+                    break;
+                }
+                auto foreign_col = foreign_table->getColumnID(cons->foreign_column_name);
+                if (foreign_col == -1) {
+                    printf("Foreign key constraint: Foreign column %s does not exist\n", cons->foreign_column_name);
+                    succeed = false;
+                    break;
+                }
+                break;
+                // TODO: add support for foreign key constraint
+            }
+            default:
+                assert(0); // WTF?
         }
     }
 
@@ -634,7 +662,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
                                }
                            });
         } catch (int err) {
-            printExpName(err);
+            printReadableException(err);
             return;
         } catch (...) {
             printf("Exception occur %d\n", __LINE__);
@@ -656,7 +684,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
             printf(" | ");
         }
         printf("\n");
-        freeCacheColumns();
+        freeCachedColumns();
         freeLinkedList(openedTables);
         return;
     }
@@ -666,7 +694,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
         if (!column_expr) { //select *
             for (int i = tb->getColumnCount() - 1; i > 0; --i) {
                 output_buf.push_back(
-                        dbType2ExprType(
+                        dbTypeToExprType(
                                 tb->select(rid, i),
                                 tb->getColumnType(i)
                         )
@@ -680,7 +708,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
                     val = calcExpression(node);
                     output_buf.push_back(val);
                 } catch (int err) {
-                    printExpName(err);
+                    printReadableException(err);
                     return;
                 } catch (...) {
                     printf("Exception occur %d\n", __LINE__);
@@ -698,7 +726,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
         count++;
     });
     printf("%d rows in query.\n", count);
-    freeCacheColumns();
+    freeCachedColumns();
     freeLinkedList(openedTables);
 }
 
@@ -727,19 +755,19 @@ void DBMS::updateRow(const char *table, expr_node *condition, column_ref *column
                 printf("Wrong data type\n");
                 throw (int) EXCEPTION_WRONG_DATA_TYPE;
             }
-            std::string ret = tb->modifyRecord(rid, col_to_update, ExprType2dbType(newval));
+            std::string ret = tb->modifyRecord(rid, col_to_update, ExprTypeToDbType(newval));
             if (ret != "") {
                 std::cout << ret << std::endl;
             }
             ++count;
         });
     } catch (int err) {
-        printExpName(err);
+        printReadableException(err);
     } catch (...) {
         printf("Exception occur %d\n", __LINE__);
     }
     printf("%d rows updated.\n", count);
-    freeCacheColumns();
+    freeCachedColumns();
 }
 
 void DBMS::deleteRow(const char *table, expr_node *condition) {
@@ -758,7 +786,7 @@ void DBMS::deleteRow(const char *table, expr_node *condition) {
         tb->dropRecord(*i);
     }
     printf("%d rows deleted.\n", (int) toBeDeleted.size());
-    freeCacheColumns();
+    freeCachedColumns();
 }
 
 void DBMS::insertRow(const char *table, const linked_list *columns, const linked_list *values) {
@@ -812,7 +840,7 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
             try {
                 val = calcExpression(node);
             } catch (int err) {
-                printExpName(err);
+                printReadableException(err);
                 return;
             } catch (...) {
                 printf("Exception occur %d\n", __LINE__);
@@ -825,7 +853,7 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
                 printf("Wrong data type\n");
                 return;
             }
-            result = tb->setTempRecord(*it, ExprType2dbType(val));
+            result = tb->setTempRecord(*it, ExprTypeToDbType(val));
             if (!result.empty()) {
                 std::cout << result << std::endl;
                 goto next_rec;

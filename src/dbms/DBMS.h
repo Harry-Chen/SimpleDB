@@ -16,23 +16,23 @@ class DBMS {
 
     bool requireDbOpen();
 
-    void printExpName(int err);
+    void printReadableException(int err);
 
     void printExprVal(const ExprVal &val);
 
-    bool convert2Bool(const ExprVal &val);
+    bool convertToBool(const ExprVal &val);
 
-    ExprVal dbType2ExprType(char *data, ColumnType type);
+    ExprVal dbTypeToExprType(char *data, ColumnType type);
+
+    char *ExprTypeToDbType(const ExprVal &val);
 
     bool checkColumnType(ColumnType type, const ExprVal &val);
-
-    char *ExprType2dbType(const ExprVal &val);
-
+    
     void cacheColumns(Table *tb, int rid);
 
-    void freeCacheColumns();
+    void freeCachedColumns();
 
-    IDX_TYPE checkIndexAvai(Table *tb, int *rid_l, int *rid_u, int *col, expr_node *condition);
+    IDX_TYPE checkIndexAvailability(Table *tb, int *rid_l, int *rid_u, int *col, expr_node *condition);
 
     int nextWithIndex(Table *tb, IDX_TYPE type, int col, int rid, int rid_u);
 

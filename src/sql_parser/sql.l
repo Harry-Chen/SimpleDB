@@ -7,7 +7,7 @@ Inspired by: https://raw.githubusercontent.com/thinkpad20/sql/master/src/lex/sql
 %{
 #include <ctype.h>
 #include "type_def.h"
-#include "y.tab.h"
+#include "sql.tab.h"
 
 char *strndup (const char *s, size_t n)
 {

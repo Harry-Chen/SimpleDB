@@ -81,7 +81,7 @@ Table *Database::getTableByName(const std::string &name) {
         if (tableName[i] == name) {
             return table[i];
         }
-    return 0;
+    return nullptr;
 }
 
 Table *Database::createTable(const std::string &name) {
