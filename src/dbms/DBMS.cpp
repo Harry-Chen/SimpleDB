@@ -250,6 +250,7 @@ void DBMS::iterateRecords(linked_list *tables, expr_node *condition, std::functi
         if (iterateTwoTableRecords(tb, (Table *) tables->next->data, condition, callback)) {
             return;
         }
+        printf("Iterating two tables with index failed, falling back to enumeration.\n");
     }
     while ((rid = tb->getNext(rid)) != -1) {
         cacheColumns(tb, rid);
@@ -294,8 +295,6 @@ DBMS::iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, std::func
         a = b;
         b = temp;
     }
-
-    printf("A: %s, B: %s\n", a->getTableName().c_str(), b->getTableName().c_str());
 
     col_a = a->getColumnID(condition->left->column->column);
     col_b = b->getColumnID(condition->right->column->column);

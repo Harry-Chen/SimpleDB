@@ -126,7 +126,7 @@ ExprVal term2val(expr_node *expr) {
                 throw (int) EXCEPTION_DATE_INVALID;
             }
             auto time = std::mktime(&tm); // drop the high 32 bits
-            if(tm_orig.tm_mday != tm.tm_mday){
+            if (tm_orig.tm_mday != tm.tm_mday) {
                 printf("Date not valid: %s\n", date_literal);
                 throw (int) EXCEPTION_DATE_INVALID;
             }
@@ -137,23 +137,28 @@ ExprVal term2val(expr_node *expr) {
             ret.value.value_s = expr->literal_s;
             break;
         case TERM_DOUBLE:
-            ret.value.value_f = expr->literal_d;
+            ret.value.value_f = (float) expr->literal_d;
             break;
         case TERM_BOOL:
             ret.value.value_b = expr->literal_b;
             break;
         case TERM_COLUMN: {
-            int cnt = column_cache.count(string(expr->column->column));
+            auto cnt = column_cache.count(string(expr->column->column));
             if (!cnt)
-                throw (int) EXCEPTION_UNKNOWN_COLUMN;
+                goto unknown_col;
             else if (cnt > 1 && !expr->column->table)
                 throw (int) EXCEPTION_COL_NOT_UNIQUE;
-            auto it = column_cache.find(string(expr->column->column));
-            for (; it != column_cache.end(); ++it)
-                if (!expr->column->table || it->second.first == string(expr->column->table)) {
-                    ret = it->second.second;
-                    goto found_col;
+            {
+                auto it = column_cache.find(string(expr->column->column));
+                for (; it != column_cache.end(); ++it) {
+                    if (!expr->column->table || it->second.first == string(expr->column->table)) {
+                        ret = it->second.second;
+                        goto found_col;
+                    }
                 }
+            }
+            unknown_col:
+            printf("Column %s in table %s not cached.\n", expr->column->column, expr->column->table);
             throw (int) EXCEPTION_UNKNOWN_COLUMN;
             found_col:;
         }
