@@ -336,9 +336,10 @@ void Table::create(const char *tableName) {
     head.nextAvail = -1;
     head.notNull = 0;
     head.checkTot = 0;
+    head.primaryCount = 0;
     addColumn("RID", CT_INT, 10, true, false, nullptr);
     setPrimary(0);
-    buf = 0;
+    buf = nullptr;
     for (int i = 0; i < MAX_COLUMN_SIZE; i++) colIndex[i].clear();
 }
 
@@ -440,27 +441,39 @@ bool Table::checkPrimary() {
                                     getIsNull(-1, firstPrimary));
     auto rid = colIndex[firstPrimary].lowerboundEqual(equalFirstIndex);
     while (rid != -1) {
+        if(rid == *(int *)(buf + head.columnOffset[0])){
+            // hit the record it self (when updating)
+            continue;
+        }
         conflictCount = 1;
         for (int col = firstPrimary + 1; col < head.columnTot; ++col) {
             if (!(head.isPrimary & (1 << col))) {
                 continue;
             }
+            char* tmp;
+            //char *new_record = getRecordTempPtr();
             switch (head.columnType[col]) {
                 case CT_INT:
                 case CT_DATE:
-                    if (*(int *) select(rid, col) == *(int *) (buf + head.columnOffset[col])) {
+                    tmp = select(rid, col);
+                    if (*(int *) tmp  == *(int *) (buf + head.columnOffset[col])) {
                         ++conflictCount;
                     }
+                    free(tmp);
                     break;
                 case CT_FLOAT:
-                    if (*(float *) select(rid, col) == *(float *) (buf + head.columnOffset[col])) {
+                    tmp = select(rid, col);
+                    if (*(float *) tmp == *(float *) (buf + head.columnOffset[col])) {
                         ++conflictCount;
                     }
+                    free(tmp);
                     break;
                 case CT_VARCHAR:
-                    if (strcmp(select(rid, col), buf + head.columnOffset[col]) == 0) {
+                    tmp = select(rid, col);
+                    if (strcmp(tmp, buf + head.columnOffset[col]) == 0) {
                         ++conflictCount;
                     }
+                    free(tmp);
                     break;
                 default:
                     assert(0);
@@ -678,7 +691,7 @@ std::string Table::loadRecordToTemp(int rid, char *page, int offset) {
 }
 
 std::string Table::modifyRecord(int rid, int col, char *data) {
-    if (data == 0) {
+    if (data == nullptr) {
         return modifyRecordNull(rid, col);
     }
     int pageID = rid / PAGE_SIZE;
@@ -729,20 +742,6 @@ std::string Table::modifyRecordNull(int rid, int col) {
     return "";
 }
 
-/* remove interface.
-void Table::replaceRecordWithTemp(int rid) {
-  assert(buf != 0);
-  unsigned int &notNull = *(unsigned int*)buf;
-  assert((notNull & head.notNull) == head.notNull);
-  int pageID = rid / PAGE_SIZE;
-  int offset = rid % PAGE_SIZE;
-  int index = BufPageManager::getInstance().getPage(fileID, pageID);
-  char *page = BufPageManager::getInstance().access(index);
-  head.nextAvail = *(unsigned int*)(page + offset);
-  memcpy(page + offset, buf, head.recordByte);
-  BufPageManager::getInstance().markDirty(index);
-}
-*/
 int Table::getRecordBytes() {
     return head.recordByte;
 }
@@ -769,38 +768,10 @@ int Table::getColumnOffset(int col) {
 ColumnType Table::getColumnType(int col) {
     return head.columnType[col];
 }
-/*
-  unsigned int Table::select(unsigned int rid, int col, OpType op, const char *data) {
-    printf("table::select: depreciate op!\n");
-    switch (head.columnType[col]) {
-      case CT_INT:
-        while (true) {
-          rid = getNext(rid);
-          if (rid == -1) return -1;
-          char *backend = getRecordTempPtr(rid);
-          if (compareInt(*(int*)(backend + head.columnOffset[col]), op, *(int*)data)) {
-            return *(unsigned int*)(backend + head.columnOffset[0]);
-          }
-        }
-        break;
-      case CT_VARCHAR:
-        while (true) {
-          rid = getNext(rid);
-          if (rid == -1) return -1;
-          char *backend = getRecordTempPtr(rid);
-          if (compareVarchar(backend + head.columnOffset[col], op, data)) {
-            return *(unsigned int*)(backend + head.columnOffset[0]);
-          }
-        }
-        break;
-      default:
-        assert(0);
-    }
-  }
-*/
+
 //return 0 when null
 //return value in tempbuf when rid = -1
-char *Table::select(unsigned int rid, int col) {
+char *Table::select(int rid, int col) {
     char *ptr;
     if (rid != -1) {
         ptr = getRecordTempPtr(rid);
@@ -829,7 +800,7 @@ char *Table::select(unsigned int rid, int col) {
 }
 
 int Table::selectIndexLowerBound(int col, const char *data) {
-    if (data == 0) {
+    if (data == nullptr) {
         return selectIndexLowerBoundNull(col);
     }
     assert(hasIndex(col));
@@ -838,7 +809,7 @@ int Table::selectIndexLowerBound(int col, const char *data) {
 }
 
 int Table::selectIndexLowerBoundEqual(int col, const char *data) {
-    if (data == 0) {
+    if (data == nullptr) {
         return selectIndexLowerBoundNull(col);
     }
     assert(hasIndex(col));
@@ -862,7 +833,7 @@ int Table::selectIndexNextEqual(int col, const char *data) {
 }
 
 int Table::selectIndexUpperBound(int col, const char *data) {
-    if (data == 0) {
+    if (data == nullptr) {
         return selectIndexUpperBoundNull(col);
     }
     assert(hasIndex(col));

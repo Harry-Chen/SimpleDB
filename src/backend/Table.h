@@ -148,7 +148,7 @@ public:
 
     //return 0 when null
     //return value in tempbuf when rid = -1
-    char *select(unsigned int rid, int col);
+    char *select(int rid, int col);
 
     int selectIndexLowerBound(int col, const char *data);
 
