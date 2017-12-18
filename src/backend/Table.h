@@ -5,6 +5,8 @@
 #include "Compare.h"
 #include "Index.h"
 
+extern bool initMode;
+
 struct Check {
     int col;
     int offset;
@@ -13,9 +15,9 @@ struct Check {
 };
 
 struct TableHead {
-    int8_t columnTot, primary, checkTot;
-    int pageTot, rowTot, recordByte, dataArrUsed;
-    unsigned int nextAvail, notNull, hasIndex;
+    int8_t columnTot, primaryCount, checkTot;
+    int pageTot, recordByte, dataArrUsed;
+    unsigned int nextAvail, notNull, hasIndex, isPrimary;
 
     char columnName[MAX_COLUMN_SIZE][MAX_NAME_LEN];
     int columnOffset[MAX_COLUMN_SIZE];

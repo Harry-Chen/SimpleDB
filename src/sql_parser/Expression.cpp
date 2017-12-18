@@ -137,16 +137,15 @@ ExprVal term2val(expr_node *expr) {
             ret.value.value_s = expr->literal_s;
             break;
         case TERM_DOUBLE:
-            ret.value.value_d = expr->literal_d;
+            ret.value.value_f = expr->literal_d;
             break;
         case TERM_BOOL:
             ret.value.value_b = expr->literal_b;
             break;
         case TERM_COLUMN: {
             int cnt = column_cache.count(string(expr->column->column));
-            // printf("count %s = %d\n", expr->column->column, cnt);
             if (!cnt)
-                throw (int) EXCEPTION_UNKOWN_COLUMN;
+                throw (int) EXCEPTION_UNKNOWN_COLUMN;
             else if (cnt > 1 && !expr->column->table)
                 throw (int) EXCEPTION_COL_NOT_UNIQUE;
             auto it = column_cache.find(string(expr->column->column));
@@ -155,7 +154,7 @@ ExprVal term2val(expr_node *expr) {
                     ret = it->second.second;
                     goto found_col;
                 }
-            throw (int) EXCEPTION_UNKOWN_COLUMN;
+            throw (int) EXCEPTION_UNKNOWN_COLUMN;
             found_col:;
         }
             break;
@@ -268,47 +267,47 @@ ExprVal calcExpression(expr_node *expr) {
     } else if (lv.type == TERM_DOUBLE) {
         switch (expr->op) {
             case OPER_ADD:
-                result.value.value_d = lv.value.value_d + rv.value.value_d;
+                result.value.value_f = lv.value.value_f + rv.value.value_f;
                 result.type = TERM_DOUBLE;
                 break;
             case OPER_DEC:
-                result.value.value_d = lv.value.value_d - rv.value.value_d;
+                result.value.value_f = lv.value.value_f - rv.value.value_f;
                 result.type = TERM_DOUBLE;
                 break;
             case OPER_MUL:
-                result.value.value_d = lv.value.value_d * rv.value.value_d;
+                result.value.value_f = lv.value.value_f * rv.value.value_f;
                 result.type = TERM_DOUBLE;
                 break;
             case OPER_DIV:
-                result.value.value_d = lv.value.value_d / rv.value.value_d;
+                result.value.value_f = lv.value.value_f / rv.value.value_f;
                 result.type = TERM_DOUBLE;
                 break;
             case OPER_EQU:
-                result.value.value_b = lv.value.value_d == rv.value.value_d;
+                result.value.value_b = lv.value.value_f == rv.value.value_f;
                 result.type = TERM_BOOL;
                 break;
             case OPER_GT:
-                result.value.value_b = lv.value.value_d > rv.value.value_d;
+                result.value.value_b = lv.value.value_f > rv.value.value_f;
                 result.type = TERM_BOOL;
                 break;
             case OPER_GE:
-                result.value.value_b = lv.value.value_d >= rv.value.value_d;
+                result.value.value_b = lv.value.value_f >= rv.value.value_f;
                 result.type = TERM_BOOL;
                 break;
             case OPER_LT:
-                result.value.value_b = lv.value.value_d < rv.value.value_d;
+                result.value.value_b = lv.value.value_f < rv.value.value_f;
                 result.type = TERM_BOOL;
                 break;
             case OPER_LE:
-                result.value.value_b = lv.value.value_d <= rv.value.value_d;
+                result.value.value_b = lv.value.value_f <= rv.value.value_f;
                 result.type = TERM_BOOL;
                 break;
             case OPER_NEQ:
-                result.value.value_b = lv.value.value_d != rv.value.value_d;
+                result.value.value_b = lv.value.value_f != rv.value.value_f;
                 result.type = TERM_BOOL;
                 break;
             case OPER_NEG:
-                result.value.value_d = -lv.value.value_d;
+                result.value.value_f = -lv.value.value_f;
                 result.type = TERM_DOUBLE;
                 break;
             case OPER_ISNULL:
@@ -387,7 +386,7 @@ bool ExprVal::operator<(const ExprVal &b) const {
             return value.value_i < b.value.value_i;
             break;
         case TERM_DOUBLE:
-            return value.value_d < b.value.value_d;
+            return value.value_f < b.value.value_f;
             break;
         default:
             throw (int) EXCEPTION_ILLEGAL_OP;
@@ -404,7 +403,7 @@ void ExprVal::operator+=(const ExprVal &b) {
             value.value_i += b.value.value_i;
             break;
         case TERM_DOUBLE:
-            value.value_d += b.value.value_d;
+            value.value_f += b.value.value_f;
             break;
         default:
             throw (int) EXCEPTION_ILLEGAL_OP;
@@ -417,11 +416,11 @@ void ExprVal::operator/=(int div) {
         return;
     switch (type) {
         case TERM_INT:
-            value.value_d = (double) value.value_i / div; //force convert here!
+            value.value_f = (double) value.value_i / div; //force convert here!
             type = TERM_DOUBLE;
             break;
         case TERM_DOUBLE:
-            value.value_d /= div;
+            value.value_f /= div;
             break;
         default:
             throw (int) EXCEPTION_ILLEGAL_OP;

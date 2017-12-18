@@ -40,7 +40,7 @@ void DBMS::printExprVal(const ExprVal &val) {
             printf("%s", val.value.value_b ? "TRUE" : "FALSE");
             break;
         case TERM_DOUBLE:
-            printf("%lf", val.value.value_d);
+            printf("%.2f", val.value.value_f);
             break;
         case TERM_STRING:
             printf("'%s'", val.value.value_s);
@@ -67,7 +67,7 @@ bool DBMS::convertToBool(const ExprVal &val) {
             t = val.value.value_b;
             break;
         case TERM_DOUBLE:
-            t = val.value.value_d;
+            t = val.value.value_f;
             break;
         case TERM_STRING:
             t = strlen(val.value.value_s);
@@ -96,7 +96,7 @@ ExprVal DBMS::dbTypeToExprType(char *data, ColumnType type) {
             break;
         case CT_FLOAT:
             v.type = TERM_DOUBLE;
-            v.value.value_d = *(float *) data;
+            v.value.value_f = *(float *) data;
             break;
         case CT_DATE:
             v.type = TERM_DATE;
@@ -140,7 +140,7 @@ char *DBMS::ExprTypeToDbType(const ExprVal &val) {
             break;
         case TERM_DOUBLE:
             // printf("double value: %lf\n", val.value.value_d);
-            ret = (char *) &val.value.value_d;
+            ret = (char *) &val.value.value_f;
             break;
         case TERM_STRING:
             // printf("string value: %s\n", val.value.value_s);
@@ -257,6 +257,18 @@ void DBMS::iterateRecords(linked_list *tables, expr_node *condition, std::functi
     }
 }
 
+expr_node *DBMS::findJoinCondition(expr_node *condition) {
+    expr_node *cond = nullptr;
+    if (condition->left->term_type == TERM_COLUMN && condition->right->term_type == TERM_COLUMN) {
+        cond = condition;
+    } else if (condition->left->term_type == TERM_NONE) {
+        cond = findJoinCondition(condition->left);
+    } else if (!cond && condition->right->term_type == TERM_NONE) {
+        cond = findJoinCondition(condition->right);
+    }
+    return cond;
+}
+
 bool
 DBMS::iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, std::function<void(Table *, int)> callback) {
     int rid_a = -1, rid_l_a, col_a;
@@ -264,11 +276,12 @@ DBMS::iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, std::func
 
     auto orig_cond = condition;
 
-    condition = condition->left;
+    condition = findJoinCondition(orig_cond);
 
-    if (condition->left->term_type != TERM_COLUMN) {
+    if (!condition) {
         return false;
     }
+
     std::vector<std::string> names;
     std::istringstream f(a->getTableName());
     std::string s;
@@ -290,16 +303,31 @@ DBMS::iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, std::func
     bool index_a = (col_a != -1 && a->hasIndex(col_a));
     bool index_b = (col_b != -1 && b->hasIndex(col_b));
 
-    if (index_a && index_b) goto index_both;
-    else if (index_a) goto index_a;
-    else if (index_b) goto index_b;
+    if (index_a && index_b) {
+        goto index_both;
+    }
+    else if (index_a) {
+        auto left = condition->left;
+        condition->left = condition->right;
+        condition->right = left;
+        goto index_a;
+    }
+    else if (index_b){
+        goto index_b;
+    }
     else {
         printf("No index on either %s or %s\n", a->getTableName().c_str(), b->getTableName().c_str());
         return false;
     }
 
 #define iterateUseIndex(x, y) cacheColumns(x, rid_##x);\
-    auto v = calcExpression(condition->left);\
+    ExprVal v; \
+    try{\
+        v = calcExpression(condition->left);\
+    } catch (int err) {\
+                printReadableException(err);\
+                return false;\
+    }\
     auto data = ExprTypeToDbType(v);\
     rid_l_##y = y->selectIndexLowerBoundEqual(col_##y, data);\
     rid_##y = rid_l_##y;\
@@ -436,7 +464,7 @@ void DBMS::createTable(const table_def *table) {
         column_rev.push_back(column);
     }
     for (auto i = column_rev.rbegin(); i != column_rev.rend(); ++i) {
-        auto type = (ColumnType)0;
+        auto type = (ColumnType) 0;
         column = *i;
         switch (column->type) {
             case COLUMN_TYPE_INT:
@@ -469,10 +497,8 @@ void DBMS::createTable(const table_def *table) {
         auto *cons = (table_constraint *) (cons_list->data);
         switch (cons->type) {
             case CONSTRAINT_PRIMARY_KEY: {
-                // TODO: add support for multiple columns in primary key
                 auto *table_names = cons->values;
-                int count = 0;
-                if (!table_names->next) {
+                for (; table_names; table_names = table_names->next) {
                     auto column_name = ((column_ref *) table_names->data)->column;
                     printf("Primary key constraint: Column in primary key: %s\n", column_name);
                     t = tab->getColumnID(column_name);
@@ -483,22 +509,8 @@ void DBMS::createTable(const table_def *table) {
                     }
                     tab->createIndex(t);
                     tab->setPrimary(t);
-                } else {
-                    for (; table_names; table_names = table_names->next) {
-                        ++count;
-                        auto column_name = ((column_ref *) table_names->data)->column;
-                        printf("Primary key constraint: Column in primary key: %s\n", column_name);
-                        t = tab->getColumnID(column_name);
-                        if (t == -1) {
-                            printf("Primary key constraint: Column %s does not exist\n", column_name);
-                            succeed = false;
-                            break;
-                        }
-                        tab->createIndex(t);
-                    }
-                    printf("Primary key constraint: Multiple columns in primary key. Primary key set to UID\n");
-
                 }
+
 
                 break;
             }
@@ -689,9 +701,10 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
         return;
     }
     int count = 0;
+
     iterateRecords(openedTables, condition, [&column_expr, &count, this](Table *tb, int rid) -> void {
         std::vector<ExprVal> output_buf;
-        if (!column_expr) { //select *
+        if (!column_expr) { // FIXME: will only select from one table when using *
             for (int i = tb->getColumnCount() - 1; i > 0; --i) {
                 output_buf.push_back(
                         dbTypeToExprType(

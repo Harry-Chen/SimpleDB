@@ -97,6 +97,7 @@ true|TRUE                           { return TRUE; }
 false|FALSE                         { return FALSE; }
 group|GROUP                         { return GROUP; }
 distinct|DISTINCT                   { return DISTINCT; }
+exit|EXIT                           { return EXIT; }
 {ID_FORMAT}                         { yylval.val_s = strdup(yytext); return IDENTIFIER; }
 {DATE_FORMAT}                       { yylval.val_s = strndup(yytext + 1, strlen(yytext) - 2); return DATE_LITERAL;}
 {STRING_FORMAT}                     { yylval.val_s = strndup(yytext + 1, strlen(yytext) - 2); return STRING_LITERAL; }

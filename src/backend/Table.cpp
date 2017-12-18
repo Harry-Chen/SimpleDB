@@ -131,7 +131,7 @@ void Table::printSchema() {
         printf("%s", head.columnName[i]);
         switch (head.columnType[i]) {
             case CT_INT:
-                printf(" INT");
+                printf(" INT(%d)", head.columnLen[i]);
                 break;
             case CT_FLOAT:
                 printf(" FLOAT");
@@ -147,7 +147,7 @@ void Table::printSchema() {
         }
         if (head.notNull & (1 << i)) printf(" NotNull");
         if (head.hasIndex & (1 << i)) printf(" Indexed");
-        if (i == head.primary) printf(" Primary");
+        if (head.isPrimary & (1 << i)) printf(" Primary");
         printf("\n");
     }
 }
@@ -243,7 +243,8 @@ void Table::dropIndex(int col) {
 
 void Table::setPrimary(int columnID) {
     assert((head.notNull >> columnID) & 1);
-    head.primary = columnID;
+    head.isPrimary |= (1 << columnID);
+    ++head.primaryCount;
 }
 
 void Table::loadIndex() {
@@ -329,13 +330,13 @@ void Table::create(const char *tableName) {
     ready = 1;
     head.pageTot = 1;
     head.recordByte = 4; // reserve first 4 bytes for notnull info
-    head.rowTot = 0;
+    //head.rowTot = 0;
     head.columnTot = 0;
     head.dataArrUsed = 0;
     head.nextAvail = -1;
     head.notNull = 0;
     head.checkTot = 0;
-    addColumn("RID", CT_INT, 10, true, false, 0);
+    addColumn("RID", CT_INT, 10, true, false, nullptr);
     setPrimary(0);
     buf = 0;
     for (int i = 0; i < MAX_COLUMN_SIZE; i++) colIndex[i].clear();
@@ -349,8 +350,8 @@ void Table::open(const char *tableName) {
     RegisterManager::getInstance().checkin(permID, this);
     int index = BufPageManager::getInstance().getPage(fileID, 0);
     memcpy(&head, BufPageManager::getInstance().access(index), sizeof(TableHead));
-    ready = 1;
-    buf = 0;
+    ready = true;
+    buf = nullptr;
     for (int i = 0; i < MAX_COLUMN_SIZE; i++) colIndex[i].clear();
     loadIndex();
 }
@@ -429,26 +430,46 @@ std::string Table::genCheckError(int checkId) {
 }
 
 bool Table::checkPrimary() {
-    if (head.primary == 0) return true;
-    int rid = colIndex[head.primary].lowerboundEqual(
-            IndexKey(permID, -1, head.primary, getFastCmp(-1, head.primary), getIsNull(-1, head.primary)));
-    if (rid == -1) return true;
-    if (rid == *(int *) (buf + head.columnOffset[0])) return true;
-    char *conf;
-    switch (head.columnType[head.primary]) {
-        case CT_INT:
-        case CT_DATE:
+    if (head.primaryCount == 1) return true;
+    int conflictCount = 0;
+    int firstPrimary = 1;
+    while (!(head.isPrimary & (1 << firstPrimary))) {
+        ++firstPrimary;
+    }
+    auto equalFirstIndex = IndexKey(permID, -1, firstPrimary, getFastCmp(-1, firstPrimary),
+                                    getIsNull(-1, firstPrimary));
+    auto rid = colIndex[firstPrimary].lowerboundEqual(equalFirstIndex);
+    while (rid != -1) {
+        conflictCount = 1;
+        for (int col = firstPrimary + 1; col < head.columnTot; ++col) {
+            if (!(head.isPrimary & (1 << col))) {
+                continue;
+            }
+            switch (head.columnType[col]) {
+                case CT_INT:
+                case CT_DATE:
+                    if (*(int *) select(rid, col) == *(int *) (buf + head.columnOffset[col])) {
+                        ++conflictCount;
+                    }
+                    break;
+                case CT_FLOAT:
+                    if (*(float *) select(rid, col) == *(float *) (buf + head.columnOffset[col])) {
+                        ++conflictCount;
+                    }
+                    break;
+                case CT_VARCHAR:
+                    if (strcmp(select(rid, col), buf + head.columnOffset[col]) == 0) {
+                        ++conflictCount;
+                    }
+                    break;
+                default:
+                    assert(0);
+            }
+        }
+        if (conflictCount == head.primaryCount - 1) {
             return false;
-        case CT_FLOAT:
-            conf = select(rid, head.primary);
-            if (*(float *) conf == *(float *) (buf + head.columnOffset[head.primary])) return false;
-            break;
-        case CT_VARCHAR:
-            conf = select(rid, head.primary);
-            if (strcmp(conf, buf + head.columnOffset[head.primary]) == 0) return false;
-            break;
-        default:
-            assert(0);
+        }
+        rid = colIndex[firstPrimary].nextEqual(equalFirstIndex);
     }
     return true;
 }
@@ -461,7 +482,7 @@ std::string Table::checkRecord() {
 
     bool flag = true, tokresult = false;
 
-    if (!checkPrimary()) {
+    if (!initMode && !checkPrimary()) {
         return "ERROR: Primary Key Conflict";
     }
 
@@ -835,7 +856,7 @@ int Table::selectIndexNext(int col) {
     return colIndex[col].next();
 }
 
-int Table::selectIndexNextEqual(int col, const char* data){
+int Table::selectIndexNextEqual(int col, const char *data) {
     assert(hasIndex(col));
     return colIndex[col].nextEqual(IndexKey(permID, -1, col, getFastCmp(-1, col), getIsNull(-1, col)));
 }

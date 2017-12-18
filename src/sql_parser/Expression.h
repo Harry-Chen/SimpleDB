@@ -10,7 +10,7 @@ enum {
     EXCEPTION_ILLEGAL_OP,
     EXCEPTION_UNIMPLEMENTED,
     EXCEPTION_COL_NOT_UNIQUE,
-    EXCEPTION_UNKOWN_COLUMN,
+    EXCEPTION_UNKNOWN_COLUMN,
     EXCEPTION_DATE_INVALID,
     EXCEPTION_WRONG_DATA_TYPE
 };
@@ -21,7 +21,7 @@ public:
     union {
         char *value_s;
         int value_i;
-        double value_d;
+        float value_f;
         bool value_b;
     } value;
 

@@ -44,7 +44,7 @@ int yyerror(const char *str);
 %token CREATE SELECT WHERE INSERT INTO FROM
 %token DEFAULT CHECK PRIMARY FOREIGN KEY REFERENCES
 %token GROUP ORDER BY DELETE LIKE SHOW
-%token IDENTIFIER FLOAT DATE
+%token IDENTIFIER FLOAT DATE EXIT
 %token DATE_LITERAL
 %token STRING_LITERAL
 %token DOUBLE_LITERAL
@@ -91,6 +91,7 @@ sql_stmt: create_db_stmt ';' {execute_create_db($1);}
         | use_db_stmt  ';' {execute_use_db($1);}
         | show_stmt  ';' {if($1==1) execute_show_tables();}
         | desc_stmt  ';' {execute_desc_tables($1);}
+        | EXIT ';' {execute_sql_eof(); exit(0);}
         ;
 
 show_stmt: SHOW IDENTIFIER {
