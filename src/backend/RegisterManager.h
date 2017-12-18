@@ -10,21 +10,21 @@ class RegisterManager {
 private:
     std::map<int, Table *> list;
 
-    RegisterManager() {}
+    RegisterManager() = default;
 
-    ~RegisterManager() {}
-
-    RegisterManager(RegisterManager const &);
-
-    RegisterManager &operator=(RegisterManager const &);
+    ~RegisterManager() = default;
 
 public:
+    RegisterManager(RegisterManager const &) = delete;
+
+    RegisterManager &operator=(RegisterManager const &) = delete;
+
     static RegisterManager &getInstance() {
         static RegisterManager instance;
         return instance;
     }
 
-    void checkin(int permID, Table *table) {
+    void checkIn(int permID, Table *table) {
         assert(list.find(permID) == list.end());
         list[permID] = table;
     }
@@ -34,7 +34,7 @@ public:
         return list[permID];
     }
 
-    void checkout(int permID) {
+    void checkOut(int permID) {
         list.erase(permID);
     }
 };

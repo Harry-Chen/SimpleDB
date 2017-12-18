@@ -13,7 +13,7 @@ void free_column_ref(column_ref *c) {
 
 void free_column_list(linked_list *cols) {
     while (cols) {
-        column_ref *c = (column_ref *) cols->data;
+        auto c = (column_ref *) cols->data;
         free_column_ref(c);
         linked_list *t = cols;
         cols = cols->next;
@@ -23,7 +23,7 @@ void free_column_list(linked_list *cols) {
 
 void free_expr_list(linked_list *exprs) {
     while (exprs) {
-        expr_node *e = (expr_node *) exprs->data;
+        auto e = (expr_node *) exprs->data;
         free_expr(e);
         linked_list *t = exprs;
         exprs = exprs->next;
@@ -34,7 +34,7 @@ void free_expr_list(linked_list *exprs) {
 
 void free_values(linked_list *values) {
     while (values) {
-        linked_list *exprs = (linked_list *) values->data;
+        auto exprs = (linked_list *) values->data;
         free_expr_list(exprs);
         linked_list *t = values;
         values = values->next;
@@ -44,7 +44,7 @@ void free_values(linked_list *values) {
 
 void free_tables(linked_list *tables) {
     while (tables) {
-        char *table_name = (char *) tables->data;
+        auto table_name = (char *) tables->data;
         free(table_name);
         linked_list *t = tables;
         tables = tables->next;
@@ -85,7 +85,7 @@ void execute_create_tb(const table_def *table) {
     linked_list *cons = table->constraints;
     while (cons) {
         linked_list *next = cons->next;
-        table_constraint *tc = (table_constraint *) (cons->data);
+        auto *tc = (table_constraint *) (cons->data);
         switch(tc->type){
             case CONSTRAINT_FOREIGN_KEY:
                 free(tc->foreign_column_name);

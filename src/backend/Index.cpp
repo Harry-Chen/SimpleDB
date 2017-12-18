@@ -55,20 +55,20 @@ int Index::end() {
     return iter->getRid();
 }
 
-int Index::lowerbound(const IndexKey &key) {
+int Index::lowerBound(const IndexKey &key) {
     iter = list.lower_bound(key);
     if (iter == list.end()) return -1;
     return iter->getRid();
 }
 
-int Index::upperbound(const IndexKey &key) {
+int Index::upperBound(const IndexKey &key) {
     iter = list.upper_bound(key);
     if (iter == list.begin()) return -1;
     if (iter != list.begin()) iter--;
     return iter->getRid();
 }
 
-int Index::lowerboundEqual(const IndexKey &key) {
+int Index::lowerBoundEqual(const IndexKey &key) {
     iter = list.lower_bound(key);
     if (iter == list.end()) return -1;
     if (iter->getFastCmp() == key.getFastCmp()) return iter->getRid();

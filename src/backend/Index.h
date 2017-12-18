@@ -52,11 +52,11 @@ public:
 
     int end();
 
-    int lowerbound(const IndexKey &key);
+    int lowerBound(const IndexKey &key);
 
-    int upperbound(const IndexKey &key);
+    int upperBound(const IndexKey &key);
 
-    int lowerboundEqual(const IndexKey &key);
+    int lowerBoundEqual(const IndexKey &key);
 
     int next();
 

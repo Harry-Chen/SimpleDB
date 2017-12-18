@@ -46,9 +46,9 @@ class Table {
 
     void allocPage();
 
-    void inverseFooter(char *page, int idx);
+    void inverseFooter(const char *page, int idx);
 
-    int getFooter(char *page, int idx);
+    int getFooter(const char *page, int idx);
 
     void loadIndex();
 
@@ -84,6 +84,8 @@ public:
     void printSchema();
 
     bool hasIndex(int col);
+
+    bool isPrimary(int col);
 
     unsigned int getNext(unsigned int rid);
 
@@ -128,7 +130,7 @@ public:
     // return error description otherwise.
     std::string insertTempRecord();
 
-    void dropRecord(int rid);
+    void dropRecord(unsigned int rid);
 
     std::string loadRecordToTemp(int rid, char *page, int offset);
 
@@ -158,7 +160,7 @@ public:
 
     int selectIndexNext(int col);
 
-    int selectIndexNextEqual(int col, const char* data);
+    int selectIndexNextEqual(int col);
 
     int selectIndexUpperBound(int col, const char *data);
 

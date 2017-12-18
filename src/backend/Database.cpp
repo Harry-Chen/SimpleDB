@@ -7,8 +7,10 @@
 #include "Database.h"
 
 Database::Database() {
-    ready = 0;
-    for (int i = 0; i < MAX_TABLE_SIZE; i++) table[i] = 0;
+    ready = false;
+    for (auto &tb : table) {
+        tb = nullptr;
+    }
 }
 
 Database::~Database() {
@@ -24,53 +26,53 @@ std::string Database::getDBName() {
 }
 
 void Database::close() {
-    assert(ready == 1);
+    assert(ready);
     FILE *file = fopen((dbName + ".db").c_str(), "w");
     fprintf(file, "%d\n", tableSize);
     for (int i = 0; i < tableSize; i++) {
         table[i]->close();
         delete table[i];
-        table[i] = 0;
+        table[i] = nullptr;
         fprintf(file, "%s\n", tableName[i].c_str());
     }
     tableSize = 0;
     fclose(file);
-    ready = 0;
+    ready = false;
 }
 
 void Database::drop() {
-    assert(ready == 1);
+    assert(ready);
     remove((dbName + ".db").c_str());
     for (int i = 0; i < tableSize; i++) {
         table[i]->drop();
         delete table[i];
-        table[i] = 0;
+        table[i] = nullptr;
         remove((dbName + "." + tableName[i] + ".table").c_str());
     }
-    ready = 0;
+    ready = false;
     tableSize = 0;
 }
 
 void Database::open(const std::string &name) {
-    assert(ready == 0);
+    assert(!ready);
     dbName = name;
     std::ifstream fin((name + ".db").c_str());
     fin >> tableSize;
     for (int i = 0; i < tableSize; i++) {
         fin >> tableName[i];
-        assert(table[i] == 0);
+        assert(table[i] == nullptr);
         table[i] = new Table();
         table[i]->open((name + "." + tableName[i] + ".table").c_str());
     }
-    ready = 1;
+    ready = true;
 }
 
 void Database::create(const std::string &name) {
-    FILE *file = fopen((name + ".db").c_str(), "w");
+    auto file = fopen((name + ".db").c_str(), "w");
     assert(file);
     fclose(file);
     assert(ready == 0);
-    ready = 1;
+    ready = true;
     tableSize = 0;
     dbName = name;
 }
@@ -85,9 +87,9 @@ Table *Database::getTableByName(const std::string &name) {
 }
 
 Table *Database::createTable(const std::string &name) {
-    assert(ready == 1);
+    assert(ready);
     tableName[tableSize] = name;
-    assert(table[tableSize] == 0);
+    assert(table[tableSize] == nullptr);
     table[tableSize] = new Table();
     table[tableSize]->create((dbName + "." + name + ".table").c_str());
     tableSize++;
