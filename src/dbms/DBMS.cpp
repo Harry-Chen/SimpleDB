@@ -776,7 +776,7 @@ void DBMS::updateRow(const char *table, expr_node *condition, column_ref *column
         iterateRecords(tb, condition, [&col_to_update, &eval, &count, this](Table *tb, int rid) -> void {
             ExprVal new_val;
             new_val = calcExpression(eval);
-            printf("t=%d\n", tb->getColumnType(col_to_update));
+            //printf("t=%d\n", tb->getColumnType(col_to_update));
             if (!checkColumnType(tb->getColumnType(col_to_update), new_val)) {
                 printf("Wrong data type\n");
                 throw (int) EXCEPTION_WRONG_DATA_TYPE;
@@ -784,6 +784,7 @@ void DBMS::updateRow(const char *table, expr_node *condition, column_ref *column
             std::string ret = tb->modifyRecord(rid, col_to_update, ExprTypeToDbType(new_val));
             if (!ret.empty()) {
                 std::cout << ret << std::endl;
+                throw (int) EXCEPTION_WRONG_DATA_TYPE;
             }
             ++count;
         });

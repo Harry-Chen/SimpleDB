@@ -452,7 +452,7 @@ bool Table::checkPrimary() {
     while (rid != -1) {
         if (rid == *(int *) (buf + head.columnOffset[0])) {
             // hit the record it self (when updating)
-            continue;
+            return true;
         }
         conflictCount = 1;
         for (int col = firstPrimary + 1; col < head.columnTot; ++col) {
