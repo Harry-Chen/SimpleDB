@@ -261,6 +261,8 @@ aggregate: SUM '(' aggregate_term ')' {$$=(expr_node*)calloc(1,sizeof(expr_node)
         | AVG '(' aggregate_term ')' {$$=(expr_node*)calloc(1,sizeof(expr_node));$$->left=$3;$$->op=OPER_AVG;}
         | MIN '(' aggregate_term ')' {$$=(expr_node*)calloc(1,sizeof(expr_node));$$->left=$3;$$->op=OPER_MIN;}
         | MAX '(' aggregate_term ')' {$$=(expr_node*)calloc(1,sizeof(expr_node));$$->left=$3;$$->op=OPER_MAX;}
+        | COUNT '(' aggregate_term ')' {$$=(expr_node*)calloc(1,sizeof(expr_node));$$->left=$3;$$->op=OPER_COUNT;}
+        | COUNT '(' '*' ')' {$$=(expr_node*)calloc(1,sizeof(expr_node));$$->left=NULL;$$->op=OPER_COUNT;}
         ;
 
 aggregate_term: column_ref {

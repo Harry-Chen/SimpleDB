@@ -44,7 +44,7 @@ void update_column_cache(const char *col_name, const char *table, const ExprVal 
 }
 
 void free_expr(expr_node *expr) {
-    assert(expr);
+    if(!expr) return;
     if (expr->op == OPER_NONE) {
         assert(expr->term_type != TERM_NONE);
         if (expr->term_type == TERM_STRING)

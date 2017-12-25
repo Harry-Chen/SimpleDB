@@ -42,6 +42,7 @@ enum {
     OPER_NOT,
     OPER_MIN,
     OPER_MAX,
+    OPER_COUNT,
     OPER_AVG,
     OPER_SUM,
     OPER_ISNULL

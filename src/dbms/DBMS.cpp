@@ -407,7 +407,8 @@ int DBMS::isAggregate(const linked_list *column_expr) {
         if (node->op == OPER_MAX ||
             node->op == OPER_MIN ||
             node->op == OPER_AVG ||
-            node->op == OPER_SUM) {
+            node->op == OPER_SUM ||
+            node->op == OPER_COUNT) {
 
             flags |= 2;
         } else {
@@ -660,11 +661,12 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
                                for (const linked_list *j = column_expr; j; j = j->next, col++) {
                                    auto node = (expr_node *) j->data;
                                    ExprVal val;
-                                   val = calcExpression(node->left);
-                                   if (val.type != TERM_NULL) {
+                                   if (node->op != OPER_COUNT) {
+                                       val = calcExpression(node->left);
+                                   }
+                                   if (node->left == nullptr || val.type != TERM_NULL) {
                                        rowCount[col]++;
-                                       if (!aggregate_buf.count(col)) {
-                                           //printf("rid=%d [%d] first\n", rid, col);
+                                       if (node->op != OPER_COUNT && !aggregate_buf.count(col)) {
                                            aggregate_buf[col] = (val);
                                        } else {
                                            switch (node->op) {
@@ -699,10 +701,14 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
             auto node = (expr_node *) j->data;
             if (node->op == OPER_AVG && aggregate_buf.count(col)) {
                 aggregate_buf[col] /= rowCount[col];
+            } else if (node->op == OPER_COUNT) {
+                aggregate_buf[col] = ExprVal();
+                aggregate_buf[col].type = TERM_INT;
+                aggregate_buf[col].value.value_i = rowCount[col];
             }
         }
         for (int i = col - 1; i >= 0; i--) {
-            if (aggregate_buf.count(i))
+            if (aggregate_buf.count(i) != 0)
                 printExprVal(aggregate_buf[i]);
             else
                 printExprVal(ExprVal(TERM_NULL));
