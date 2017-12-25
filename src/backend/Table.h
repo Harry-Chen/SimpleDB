@@ -14,8 +14,14 @@ struct Check {
     RelType rel;
 };
 
+struct ForeignKey {
+    int col;
+    int foreign_table_id;
+    int foreign_col;
+};
+
 struct TableHead {
-    int8_t columnTot, primaryCount, checkTot;
+    int8_t columnTot, primaryCount, checkTot, foreignKeyTot;
     int pageTot, recordByte, dataArrUsed;
     unsigned int nextAvail, notNull, hasIndex, isPrimary;
 
@@ -25,6 +31,7 @@ struct TableHead {
     int columnLen[MAX_COLUMN_SIZE];
     int defaultOffset[MAX_COLUMN_SIZE];
     Check checkList[MAX_CHECK];
+    ForeignKey foreignKeyList[MAX_FOREIGN_KEY];
     char dataArr[MAX_DATA_SIZE];
 };
 
@@ -76,6 +83,10 @@ class Table {
 
     bool checkPrimary();
 
+    std::string checkValueConstraint();
+
+    std::string checkForeignKeyConstraint();
+
     std::string checkRecord();
 
 public:
@@ -120,6 +131,8 @@ public:
     //   Result: col[1]>10 AND col[2]=='a' AND col[3]=='c' AND col[2]=='b'
 
     void addCheck(int col, OpType op, char *data, RelType relation);
+
+    void addForeignKeyConstraint(int col, int foreignTableId, int foreignColId);
 
     std::string setTempRecord(int col, const char *data);
 

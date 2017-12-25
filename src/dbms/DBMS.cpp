@@ -520,7 +520,7 @@ void DBMS::createTable(const table_def *table) {
                 {
                     linked_list *exprs = cons->values;
                     for (; exprs; exprs = exprs->next) {
-                        expr_node *node = (expr_node *) exprs->data;
+                        auto node = (expr_node *) exprs->data;
                         ExprVal val;
                         try {
                             val = calcExpression(node);
@@ -546,20 +546,37 @@ void DBMS::createTable(const table_def *table) {
                     succeed = false;
                     break;
                 }
-                auto foreign_table = current->getTableByName(cons->foreign_table_name);
-                if (foreign_table == nullptr) {
+                if (tab->getColumnType(t) != CT_INT) {
+                    printf("Foreign key constraint: Column %s must be int.\n", cons->column_name);
+                    succeed = false;
+                    break;
+                }
+                auto foreign_table_id = current->getTableIdByName(cons->foreign_table_name);
+                if (foreign_table_id == (size_t) -1) {
                     printf("Foreign key constraint: Foreign table %s does not exist\n", cons->foreign_table_name);
                     succeed = false;
                     break;
                 }
+                auto foreign_table = current->getTableById(foreign_table_id);
                 auto foreign_col = foreign_table->getColumnID(cons->foreign_column_name);
                 if (foreign_col == -1) {
                     printf("Foreign key constraint: Foreign column %s does not exist\n", cons->foreign_column_name);
                     succeed = false;
                     break;
                 }
+                if (tab->getColumnType(t) != foreign_table->getColumnType(foreign_col)) {
+                    printf("Foreign key constraint: Type of foreign column %s does not match %s\n",
+                           cons->foreign_column_name, cons->column_name);
+                    succeed = false;
+                    break;
+                }
+                if (!foreign_table->hasIndex(foreign_col)) {
+                    printf("Foreign key constraint: Foreign column %s must be indexed.\n", cons->foreign_column_name);
+                    succeed = false;
+                    break;
+                }
+                tab->addForeignKeyConstraint(t, (int) foreign_table_id, foreign_col);
                 break;
-                // TODO: add support for foreign key constraint
             }
             default:
                 assert(0); // WTF?
@@ -641,7 +658,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
                            [&rowCount, &aggregate_buf, &column_expr, this](Table *tb, int rid) -> void {
                                int col = 0;
                                for (const linked_list *j = column_expr; j; j = j->next, col++) {
-                                   auto *node = (expr_node *) j->data;
+                                   auto node = (expr_node *) j->data;
                                    ExprVal val;
                                    val = calcExpression(node->left);
                                    if (val.type != TERM_NULL) {
@@ -679,7 +696,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
         int col = 0;
         printf("| ");
         for (const linked_list *j = column_expr; j; j = j->next, col++) {
-            auto *node = (expr_node *) j->data;
+            auto node = (expr_node *) j->data;
             if (node->op == OPER_AVG && aggregate_buf.count(col)) {
                 aggregate_buf[col] /= rowCount[col];
             }
@@ -844,7 +861,7 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
         auto it = colId.begin();
         std::string result;
         for (const linked_list *j = expr_list; j; j = j->next) {
-            auto *node = (expr_node *) j->data;
+            auto node = (expr_node *) j->data;
             ExprVal val;
             try {
                 val = calcExpression(node);
@@ -922,4 +939,10 @@ void DBMS::descTable(const char *name) {
         return;
     }
     tb->printSchema();
+}
+
+bool DBMS::valueExistInTable(const char *value, const ForeignKey &key) {
+    auto table = current->getTableById(key.foreign_table_id);
+    auto result = table->selectIndexLowerBoundEqual(key.foreign_col, value);
+    return result != -1;
 }

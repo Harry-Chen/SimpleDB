@@ -34,6 +34,10 @@ public:
     // return 0 if not found
     Table *getTableByName(const std::string &name);
 
+    size_t getTableIdByName(const std::string &name);
+
+    Table *getTableById(const size_t id);
+
     Table *createTable(const std::string &name);
 
     void dropTableByName(const std::string &name);

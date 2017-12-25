@@ -86,6 +86,19 @@ Table *Database::getTableByName(const std::string &name) {
     return nullptr;
 }
 
+size_t Database::getTableIdByName(const std::string &name){
+    for (size_t i = 0; i < tableSize; i++)
+        if (tableName[i] == name) {
+            return i;
+        }
+    return (size_t) -1;
+}
+
+Table *Database::getTableById(const size_t id) {
+    if (id < tableSize) return table[id];
+    else return nullptr;
+}
+
 Table *Database::createTable(const std::string &name) {
     assert(ready);
     tableName[tableSize] = name;

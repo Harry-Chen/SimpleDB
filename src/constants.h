@@ -16,6 +16,7 @@
 #define MAX_NAME_LEN 128
 #define MAX_DATA_SIZE 3000
 #define MAX_CHECK 16
+#define MAX_FOREIGN_KEY 24
 
 //----------------------Database-----------------------------------------
 #define MAX_TABLE_SIZE 32

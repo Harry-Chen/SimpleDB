@@ -4,11 +4,11 @@
 #include <cstring>
 #include <string>
 #include <sstream>
+#include <dbms/DBMS.h>
 
 #include "../io/FileManager.h"
 #include "../io/BufPageManager.h"
 #include "RegisterManager.h"
-#include "Table.h"
 
 bool operator<(const IndexKey &a, const IndexKey &b) {
     assert(a.permID == b.permID);
@@ -340,6 +340,7 @@ void Table::create(const char *tableName) {
     head.nextAvail = -1;
     head.notNull = 0;
     head.checkTot = 0;
+    head.foreignKeyTot = 0;
     head.primaryCount = 0;
     addColumn("RID", CT_INT, 10, true, false, nullptr);
     setPrimary(0);
@@ -495,20 +496,11 @@ bool Table::checkPrimary() {
     return true;
 }
 
-std::string Table::checkRecord() {
+std::string Table::checkValueConstraint() {
     unsigned int &notNull = *(unsigned int *) buf;
-    if ((notNull & head.notNull) != head.notNull) {
-        return "Insert Error: not null column is null.";
-    }
-
     bool flag = true, checkResult = false;
-
-    if (!initMode && !checkPrimary()) {
-        return "ERROR: Primary Key Conflict";
-    }
-
     for (int i = 0; i < head.checkTot; i++) {
-        Check chk = head.checkList[i];
+        auto chk = head.checkList[i];
         if (chk.offset == -1) {
             checkResult |= (chk.op == OP_EQ) && (((~notNull) & (1 << chk.col)) == 0);
         } else {
@@ -537,8 +529,44 @@ std::string Table::checkRecord() {
         }
         if (!flag) return genCheckError(i);
     }
+    return std::string();
+}
 
-    return "";
+std::string Table::checkForeignKeyConstraint() {
+    for (int i = 0; i < head.foreignKeyTot; ++i) {
+        auto check = head.foreignKeyList[i];
+        auto localData = (buf + head.columnOffset[check.col]);
+        auto dbms = DBMS::getInstance();
+        if (!dbms->valueExistInTable(localData, check)) {
+            return "Insert Error: Value of column " + std::string(head.columnName[i])
+                   + " does not meet foreign key constraint";
+        }
+    }
+    return std::string();
+}
+
+std::string Table::checkRecord() {
+    unsigned int &notNull = *(unsigned int *) buf;
+    if ((notNull & head.notNull) != head.notNull) {
+        return "Insert Error: not null column is null.";
+    }
+
+    if (!initMode) {
+        if (!checkPrimary()) {
+            return "ERROR: Primary Key Conflict";
+        }
+        auto valueCheck = checkValueConstraint();
+        if (!valueCheck.empty()) {
+            return valueCheck;
+        }
+
+        auto foreignKeyCheck = checkForeignKeyConstraint();
+        if (!foreignKeyCheck.empty()) {
+            return foreignKeyCheck;
+        }
+    }
+
+    return std::string();
 }
 
 int Table::getColumnCount() {
@@ -603,6 +631,14 @@ void Table::addCheck(int col, OpType op, char *data, RelType relation) {
     head.checkTot++;
 }
 
+void Table::addForeignKeyConstraint(int col, int foreignTableId, int foreignColId) {
+    assert(head.foreignKeyTot < MAX_FOREIGN_KEY);
+    head.foreignKeyList[head.foreignKeyTot].col = col;
+    head.foreignKeyList[head.foreignKeyTot].foreign_table_id = foreignTableId;
+    head.foreignKeyList[head.foreignKeyTot].foreign_col = foreignColId;
+    head.foreignKeyTot++;
+}
+
 std::string Table::setTempRecord(int col, const char *data) {
     if (data == nullptr) {
         setTempRecordNull(col);
@@ -654,8 +690,9 @@ std::string Table::insertTempRecord() {
     }
     int rid = head.nextAvail;
     setTempRecord(0, (char *) &head.nextAvail);
-    std::string error = checkRecord();
+    auto error = checkRecord();
     if (!error.empty()) {
+        printf("Error occurred when inserting record, aborting...\n");
         return error;
     }
     int pageID = head.nextAvail / PAGE_SIZE;

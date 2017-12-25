@@ -76,6 +76,8 @@ public:
     void dropIndex(column_ref *tb_col);
 
     void descTable(const char *name);
+
+    bool valueExistInTable(const char* value, const ForeignKey& key);
 };
 
 #endif

@@ -9,6 +9,7 @@ Inspired by: https://raw.githubusercontent.com/thinkpad20/sql/master/src/lex/sql
 #include "type_def.h"
 #include "sql.tab.h"
 
+#ifndef __linux__
 char *strndup (const char *s, size_t n)
 {
   char *result;
@@ -24,6 +25,7 @@ char *strndup (const char *s, size_t n)
   result[len] = '\0';
   return (char *)memcpy(result, s, len);
 }
+#endif
 
 %}
 
