@@ -107,7 +107,7 @@ bool strlike(const char *a, const char *b) {
     return std::regex_match(std::string(a), reg);
 }
 
-ExprVal term2val(expr_node *expr) {
+ExprVal termToValue(expr_node *expr) {
     ExprVal ret;
     ret.type = expr->term_type;
     switch (expr->term_type) {
@@ -136,8 +136,8 @@ ExprVal term2val(expr_node *expr) {
         case TERM_STRING:
             ret.value.value_s = expr->literal_s;
             break;
-        case TERM_DOUBLE:
-            ret.value.value_f = (float) expr->literal_d;
+        case TERM_FLOAT:
+            ret.value.value_f = expr->literal_f;
             break;
         case TERM_BOOL:
             ret.value.value_b = expr->literal_b;
@@ -174,7 +174,7 @@ ExprVal term2val(expr_node *expr) {
 ExprVal calcExpression(expr_node *expr) {
     assert(expr);
     if (expr->op == OPER_NONE)
-        return term2val(expr);
+        return termToValue(expr);
     assert(expr->term_type == TERM_NONE);
     ExprVal result;
     const ExprVal &lv = calcExpression(expr->left);
@@ -269,23 +269,23 @@ ExprVal calcExpression(expr_node *expr) {
             default:
                 throw (int) EXCEPTION_ILLEGAL_OP;
         }
-    } else if (lv.type == TERM_DOUBLE) {
+    } else if (lv.type == TERM_FLOAT) {
         switch (expr->op) {
             case OPER_ADD:
                 result.value.value_f = lv.value.value_f + rv.value.value_f;
-                result.type = TERM_DOUBLE;
+                result.type = TERM_FLOAT;
                 break;
             case OPER_DEC:
                 result.value.value_f = lv.value.value_f - rv.value.value_f;
-                result.type = TERM_DOUBLE;
+                result.type = TERM_FLOAT;
                 break;
             case OPER_MUL:
                 result.value.value_f = lv.value.value_f * rv.value.value_f;
-                result.type = TERM_DOUBLE;
+                result.type = TERM_FLOAT;
                 break;
             case OPER_DIV:
                 result.value.value_f = lv.value.value_f / rv.value.value_f;
-                result.type = TERM_DOUBLE;
+                result.type = TERM_FLOAT;
                 break;
             case OPER_EQU:
                 result.value.value_b = lv.value.value_f == rv.value.value_f;
@@ -313,7 +313,7 @@ ExprVal calcExpression(expr_node *expr) {
                 break;
             case OPER_NEG:
                 result.value.value_f = -lv.value.value_f;
-                result.type = TERM_DOUBLE;
+                result.type = TERM_FLOAT;
                 break;
             case OPER_ISNULL:
                 result.value.value_b = false;
@@ -390,7 +390,7 @@ bool ExprVal::operator<(const ExprVal &b) const {
         case TERM_INT:
             return value.value_i < b.value.value_i;
             break;
-        case TERM_DOUBLE:
+        case TERM_FLOAT:
             return value.value_f < b.value.value_f;
             break;
         default:
@@ -407,7 +407,7 @@ void ExprVal::operator+=(const ExprVal &b) {
         case TERM_INT:
             value.value_i += b.value.value_i;
             break;
-        case TERM_DOUBLE:
+        case TERM_FLOAT:
             value.value_f += b.value.value_f;
             break;
         default:
@@ -422,9 +422,9 @@ void ExprVal::operator/=(int div) {
     switch (type) {
         case TERM_INT:
             value.value_f = (double) value.value_i / div; //force convert here!
-            type = TERM_DOUBLE;
+            type = TERM_FLOAT;
             break;
-        case TERM_DOUBLE:
+        case TERM_FLOAT:
             value.value_f /= div;
             break;
         default:

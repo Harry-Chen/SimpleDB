@@ -1,5 +1,5 @@
-#ifndef LT_TYPE_DEF_H_
-#define LT_TYPE_DEF_H_
+#ifndef __TYPE_DEF_H__
+#define __TYPE_DEF_H__
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -8,22 +8,22 @@
 extern "C" {
 #endif
 
-enum {
+typedef enum column_flag {
     COLUMN_FLAG_NOTNULL = 1,
     COLUMN_FLAG_DEFAULT = 2
-};
+} column_flag;
 
-enum {
+typedef enum column_type {
     COLUMN_TYPE_INT,
     COLUMN_TYPE_CHAR,
     COLUMN_TYPE_VARCHAR,
     COLUMN_TYPE_FLOAT,
     COLUMN_TYPE_DATE
-};
+} column_type;
 
 #define OPER_UNARY 0x80
 
-enum {
+typedef enum operator_type {
     OPER_NONE,
     OPER_ADD,
     OPER_DEC,
@@ -46,24 +46,24 @@ enum {
     OPER_AVG,
     OPER_SUM,
     OPER_ISNULL
-};
+} operator_type;
 
-enum {
+typedef enum term_type {
     TERM_NONE,
     TERM_INT,
     TERM_STRING,
-    TERM_DOUBLE,
+    TERM_FLOAT,
     TERM_BOOL,
     TERM_NULL,
     TERM_COLUMN,
     TERM_DATE
-};
+} term_type;
 
-enum {
+typedef enum constraint_type {
     CONSTRAINT_PRIMARY_KEY,
     CONSTRAINT_FOREIGN_KEY,
     CONSTRAINT_CHECK
-};
+} constraint_type;
 
 typedef struct linked_list {
     void *data;
@@ -108,13 +108,13 @@ typedef struct expr_node {
         struct expr_node *left;
         char *literal_s;
         int literal_i;
-        double literal_d;
+        float literal_f;
         uint8_t literal_b;
         column_ref *column;
     };
     struct expr_node *right;
-    uint8_t op;
-    uint8_t term_type;
+    operator_type op;
+    term_type term_type;
 } expr_node;
 
 typedef struct select_argu {
@@ -139,4 +139,4 @@ typedef struct update_argu {
 }
 #endif
 
-#endif
+#endif // __TYPE_DEF_H__

@@ -104,7 +104,7 @@ exit|EXIT                           { return EXIT; }
 {DATE_FORMAT}                       { yylval.val_s = strndup(yytext + 1, strlen(yytext) - 2); return DATE_LITERAL;}
 {STRING_FORMAT}                     { yylval.val_s = strndup(yytext + 1, strlen(yytext) - 2); return STRING_LITERAL; }
 {INT_FORMAT}                        { yylval.val_i = atoi(yytext); return INT_LITERAL; }
-{FLOAT_FORMAT}                      { yylval.val_d = atof(yytext); return DOUBLE_LITERAL; }
+{FLOAT_FORMAT}                      { yylval.val_f = atof(yytext); return FLOAT_LITERAL; }
 [ \t\r\n]+                          { /* ignore */ }
 .                                   { return(yytext[0]);}
 %%

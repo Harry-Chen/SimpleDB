@@ -1,5 +1,5 @@
-#ifndef __CMP_H__
-#define __CMP_H__
+#ifndef __COMPARE_H__
+#define __COMPARE_H__
 
 enum ColumnType {
     CT_INT, CT_VARCHAR, CT_FLOAT, CT_DATE
@@ -23,10 +23,10 @@ int compareIntSgn(int x, int y);
 
 int compareVarcharSgn(char *x, char *y);
 
-int fsgn(float x);
+int floatSgn(float x);
 
 int compareFloatSgn(float x, float y);
 
 std::string opTypeToString(OpType op);
 
-#endif
+#endif // __COMPARE_H__

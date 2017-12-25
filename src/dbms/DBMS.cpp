@@ -39,7 +39,7 @@ void DBMS::printExprVal(const ExprVal &val) {
         case TERM_BOOL:
             printf("%s", val.value.value_b ? "TRUE" : "FALSE");
             break;
-        case TERM_DOUBLE:
+        case TERM_FLOAT:
             printf("%.2f", val.value.value_f);
             break;
         case TERM_STRING:
@@ -66,7 +66,7 @@ bool DBMS::convertToBool(const ExprVal &val) {
         case TERM_BOOL:
             t = val.value.value_b;
             break;
-        case TERM_DOUBLE:
+        case TERM_FLOAT:
             t = val.value.value_f != 0;
             break;
         case TERM_STRING:
@@ -95,7 +95,7 @@ ExprVal DBMS::dbTypeToExprType(char *data, ColumnType type) {
             v.value.value_s = data;
             break;
         case CT_FLOAT:
-            v.type = TERM_DOUBLE;
+            v.type = TERM_FLOAT;
             v.value.value_f = *(float *) data;
             break;
         case CT_DATE:
@@ -109,13 +109,26 @@ ExprVal DBMS::dbTypeToExprType(char *data, ColumnType type) {
     return v;
 }
 
+term_type DBMS::ColumnTypeToExprType(const ColumnType &type) {
+    switch (type) {
+        case CT_INT:
+            return TERM_INT;
+        case CT_FLOAT:
+            return TERM_FLOAT;
+        case CT_VARCHAR:
+            return TERM_STRING;
+        case CT_DATE:
+            return TERM_DATE;
+    }
+}
+
 bool DBMS::checkColumnType(ColumnType type, const ExprVal &val) {
     if (val.type == TERM_NULL)
         return true;
     switch (val.type) {
         case TERM_INT:
             return type == CT_INT || type == CT_FLOAT;
-        case TERM_DOUBLE:
+        case TERM_FLOAT:
             return type == CT_FLOAT;
         case TERM_STRING:
             return type == CT_VARCHAR;
@@ -126,21 +139,31 @@ bool DBMS::checkColumnType(ColumnType type, const ExprVal &val) {
     }
 }
 
-char *DBMS::ExprTypeToDbType(const ExprVal &val) {
+char *DBMS::ExprTypeToDbType(ExprVal &val, term_type desiredType) {
     char *ret = nullptr;
     //TODO: data type convert here, e.g. double->int
     switch (val.type) {
         case TERM_INT:
             // printf("int value: %d\n", val.value.value_i);
-            ret = (char *) &val.value.value_i;
+            if (desiredType == TERM_FLOAT) {
+                val.value.value_f = val.value.value_i;
+                ret = (char *) &val.value.value_f;
+            } else {
+                ret = (char *) &val.value.value_i;
+            }
             break;
         case TERM_BOOL:
             // printf("bool value: %d\n", val.value.value_b);
             ret = (char *) &val.value.value_b;
             break;
-        case TERM_DOUBLE:
+        case TERM_FLOAT:
             // printf("double value: %lf\n", val.value.value_d);
-            ret = (char *) &val.value.value_f;
+            if (desiredType == TERM_INT) {
+                val.value.value_i = (int) val.value.value_f;
+                ret = (char *) &val.value.value_i;
+            } else {
+                ret = (char *) &val.value.value_f;
+            }
             break;
         case TERM_STRING:
             // printf("string value: %s\n", val.value.value_s);
@@ -221,8 +244,9 @@ DBMS::IDX_TYPE DBMS::checkIndexAvailability(Table *tb, int *rid_l, int *rid_u, i
     }
     if (type != IDX_NONE) {
         *col = c;
-        *rid_u = tb->selectIndexUpperBound(c, ExprTypeToDbType(v));
-        *rid_l = tb->selectIndexLowerBound(c, ExprTypeToDbType(v));
+        auto colType = ColumnTypeToExprType(tb->getColumnType(c));
+        *rid_u = tb->selectIndexUpperBound(c, ExprTypeToDbType(v, colType));
+        *rid_l = tb->selectIndexLowerBound(c, ExprTypeToDbType(v, colType));
     }
     return type;
 }
@@ -324,7 +348,7 @@ DBMS::iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, std::func
                 printReadableException(err);\
                 return false;\
     }\
-    auto data = ExprTypeToDbType(v);\
+    auto data = ExprTypeToDbType(v, ColumnTypeToExprType(y->getColumnType(col_##y)));\
     rid_l_##y = y->selectIndexLowerBoundEqual(col_##y, data);\
     rid_##y = rid_l_##y;\
     for (; rid_##y != -1; rid_##y = y->selectIndexNextEqual(col_##y)) {\
@@ -531,7 +555,8 @@ void DBMS::createTable(const table_def *table) {
                         } catch (...) {
                             printf("Exception occur %d\n", __LINE__);
                         }
-                        tab->addCheck(t, OP_EQ, ExprTypeToDbType(val), RE_OR);
+                        tab->addCheck(t, OP_EQ, ExprTypeToDbType(val, ColumnTypeToExprType(tab->getColumnType(t))),
+                                      RE_OR);
                         printf("Value constraint: Column %s must be ", cons->column_name);
                         printExprVal(val);
                         putchar('\n');
@@ -783,11 +808,12 @@ void DBMS::updateRow(const char *table, expr_node *condition, column_ref *column
             ExprVal new_val;
             new_val = calcExpression(eval);
             //printf("t=%d\n", tb->getColumnType(col_to_update));
-            if (!checkColumnType(tb->getColumnType(col_to_update), new_val)) {
+            auto colType = tb->getColumnType(col_to_update);
+            if (!checkColumnType(colType, new_val)) {
                 printf("Wrong data type\n");
                 throw (int) EXCEPTION_WRONG_DATA_TYPE;
             }
-            std::string ret = tb->modifyRecord(rid, col_to_update, ExprTypeToDbType(new_val));
+            std::string ret = tb->modifyRecord(rid, col_to_update, ExprTypeToDbType(new_val, ColumnTypeToExprType(colType)));
             if (!ret.empty()) {
                 std::cout << ret << std::endl;
                 throw (int) EXCEPTION_WRONG_DATA_TYPE;
@@ -882,11 +908,13 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
             //printf("Column [%d] value ", *it);
             //printExprVal(val);
             //putchar('\n');
-            if (!checkColumnType(tb->getColumnType(*it), val)) {
+            auto colType = tb->getColumnType(*it);
+            if (!checkColumnType(colType, val)) {
                 printf("Wrong data type\n");
                 return;
             }
-            result = tb->setTempRecord(*it, ExprTypeToDbType(val));
+            auto exprType = ColumnTypeToExprType(colType);
+            result = tb->setTempRecord(*it, ExprTypeToDbType(val, exprType));
             if (!result.empty()) {
                 std::cout << result << std::endl;
                 goto next_rec;

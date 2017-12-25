@@ -21,7 +21,7 @@ int yyerror(const char *str);
 %}
 %union {
   int val_i;
-  double val_d;
+  float val_f;
   char *val_s;
   column_ref* ref_column;
   column_defs* def_column;
@@ -47,13 +47,13 @@ int yyerror(const char *str);
 %token IDENTIFIER FLOAT DATE EXIT
 %token DATE_LITERAL
 %token STRING_LITERAL
-%token DOUBLE_LITERAL
+%token FLOAT_LITERAL
 %token INT_LITERAL
 
 %type <val_s> table_name db_name desc_stmt IDENTIFIER STRING_LITERAL DATE_LITERAL
 %type <val_s> create_db_stmt drop_db_stmt use_db_stmt drop_tb_stmt
 %type <val_s> table_join
-%type <val_d> DOUBLE_LITERAL
+%type <val_f> FLOAT_LITERAL
 %type <ref_column> column_ref
 %type <val_i> show_stmt column_type column_constraints column_constraint type_width
 %type <val_i> INT_LITERAL compare_op logic_op
@@ -373,10 +373,10 @@ term: column_ref {
             $$->literal_i=$1;
             $$->term_type=TERM_INT;
         }
-    | DOUBLE_LITERAL {
+    | FLOAT_LITERAL {
             $$=(expr_node*)calloc(1,sizeof(expr_node));
-            $$->literal_d=$1;
-            $$->term_type=TERM_DOUBLE;
+            $$->literal_f=$1;
+            $$->term_type=TERM_FLOAT;
         }
     | DATE_LITERAL {
             $$=(expr_node*)calloc(1,sizeof(expr_node));

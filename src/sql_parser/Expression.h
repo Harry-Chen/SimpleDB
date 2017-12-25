@@ -17,7 +17,7 @@ enum {
 
 class ExprVal {
 public:
-    uint8_t type;
+    term_type type;
     union {
         char *value_s;
         int value_i;
@@ -31,14 +31,14 @@ public:
 
     void operator/=(int);
 
-    ExprVal(uint8_t type_) : type(type_) {}
+    ExprVal(term_type type_) : type(type_) {}
 
     ExprVal() = default;
 
     ExprVal(const ExprVal &) = default;
 };
 
-void clean_column_cache(void);
+void clean_column_cache();
 
 void clean_column_cache_by_table(const char *table);
 

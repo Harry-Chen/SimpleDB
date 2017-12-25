@@ -24,7 +24,9 @@ class DBMS {
 
     ExprVal dbTypeToExprType(char *data, ColumnType type);
 
-    char *ExprTypeToDbType(const ExprVal &val);
+    char *ExprTypeToDbType(ExprVal &val, term_type desiredType);
+
+    term_type ColumnTypeToExprType(const ColumnType& type);
 
     bool checkColumnType(ColumnType type, const ExprVal &val);
     

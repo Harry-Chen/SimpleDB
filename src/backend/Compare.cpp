@@ -72,14 +72,14 @@ int compareVarcharSgn(char *x, char *y) {
     return sgn(strcmp(x, y));
 }
 
-int fsgn(float x) {
+int floatSgn(float x) {
     if (x == 0) return 0;
     if (x > 0) return 1;
     return -1;
 }
 
 int compareFloatSgn(float x, float y) {
-    return fsgn(x - y);
+    return floatSgn(x - y);
 }
 
 std::string opTypeToString(OpType op) {
