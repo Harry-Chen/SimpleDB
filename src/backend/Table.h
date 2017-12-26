@@ -15,9 +15,9 @@ struct Check {
 };
 
 struct ForeignKey {
-    int col;
-    int foreign_table_id;
-    int foreign_col;
+    unsigned int col;
+    unsigned int foreign_table_id;
+    unsigned int foreign_col;
 };
 
 struct TableHead {
@@ -63,13 +63,13 @@ class Table {
 
     void dropIndex();
 
-    int getFastCmp(int rid, int col);
+    int getFastCmp(RID_t rid, int col);
 
-    bool getIsNull(int rid, int col);
+    bool getIsNull(RID_t rid, int col);
 
-    void eraseColIndex(int rid, int col);
+    void eraseColIndex(RID_t rid, int col);
 
-    void insertColIndex(int rid, int col);
+    void insertColIndex(RID_t rid, int col);
 
     void create(const char *tableName);
 
@@ -98,7 +98,7 @@ public:
 
     bool isPrimary(int col);
 
-    unsigned int getNext(unsigned int rid);
+    RID_t getNext(RID_t rid);
 
     // return -1 if name exist, columnId otherwise
     // size: maxlen for varchar, outputwidth for int
@@ -132,7 +132,7 @@ public:
 
     void addCheck(int col, OpType op, char *data, RelType relation);
 
-    void addForeignKeyConstraint(int col, int foreignTableId, int foreignColId);
+    void addForeignKeyConstraint(unsigned int col, unsigned int foreignTableId, unsigned int foreignColId);
 
     std::string setTempRecord(int col, const char *data);
 
@@ -143,19 +143,19 @@ public:
     // return error description otherwise.
     std::string insertTempRecord();
 
-    void dropRecord(unsigned int rid);
+    void dropRecord(RID_t rid);
 
-    std::string loadRecordToTemp(int rid, char *page, int offset);
+    std::string loadRecordToTemp(RID_t rid, char *page, int offset);
 
-    std::string modifyRecord(int rid, int col, char *data);
+    std::string modifyRecord(RID_t rid, int col, char *data);
 
-    std::string modifyRecordNull(int rid, int col);
+    std::string modifyRecordNull(RID_t rid, int col);
 
     int getRecordBytes();
 
-    char *getRecordTempPtr(unsigned int rid);
+    char *getRecordTempPtr(RID_t rid);
 
-    void getRecord(unsigned int rid, char *buf);
+    void getRecord(RID_t rid, char *buf);
 
     int getColumnOffset(int col);
 
@@ -163,23 +163,23 @@ public:
 
     //return 0 when null
     //return value in tempbuf when rid = -1
-    char *select(int rid, int col);
+    char *select(RID_t rid, int col);
 
-    int selectIndexLowerBound(int col, const char *data);
+    RID_t selectIndexLowerBound(int col, const char *data);
 
-    int selectIndexLowerBoundEqual(int col, const char *data);
+    RID_t selectIndexLowerBoundEqual(int col, const char *data);
 
-    int selectIndexLowerBoundNull(int col);
+    RID_t selectIndexLowerBoundNull(int col);
 
-    int selectIndexNext(int col);
+    RID_t selectIndexNext(int col);
 
-    int selectIndexNextEqual(int col);
+    RID_t selectIndexNextEqual(int col);
 
-    int selectIndexUpperBound(int col, const char *data);
+    RID_t selectIndexUpperBound(int col, const char *data);
 
-    int selectIndexUpperBoundNull(int col);
+    RID_t selectIndexUpperBoundNull(int col);
 
-    int selectReveredIndexNext(int col);
+    RID_t selectReveredIndexNext(int col);
 
     char *getColumnName(int col);
 

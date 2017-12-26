@@ -28,8 +28,8 @@ std::string Database::getDBName() {
 void Database::close() {
     assert(ready);
     FILE *file = fopen((dbName + ".db").c_str(), "w");
-    fprintf(file, "%d\n", tableSize);
-    for (int i = 0; i < tableSize; i++) {
+    fprintf(file, "%zu\n", tableSize);
+    for (size_t i = 0; i < tableSize; i++) {
         table[i]->close();
         delete table[i];
         table[i] = nullptr;
@@ -43,7 +43,7 @@ void Database::close() {
 void Database::drop() {
     assert(ready);
     remove((dbName + ".db").c_str());
-    for (int i = 0; i < tableSize; i++) {
+    for (size_t i = 0; i < tableSize; i++) {
         table[i]->drop();
         delete table[i];
         table[i] = nullptr;
@@ -58,7 +58,7 @@ void Database::open(const std::string &name) {
     dbName = name;
     std::ifstream fin((name + ".db").c_str());
     fin >> tableSize;
-    for (int i = 0; i < tableSize; i++) {
+    for (size_t i = 0; i < tableSize; i++) {
         fin >> tableName[i];
         assert(table[i] == nullptr);
         table[i] = new Table();
@@ -79,17 +79,17 @@ void Database::create(const std::string &name) {
 
 // return 0 if not found
 Table *Database::getTableByName(const std::string &name) {
-    for (int i = 0; i < tableSize; i++)
+    for (size_t i = 0; i < tableSize; i++)
         if (tableName[i] == name) {
             return table[i];
         }
     return nullptr;
 }
 
-size_t Database::getTableIdByName(const std::string &name){
+size_t Database::getTableIdByName(const std::string &name) {
     for (size_t i = 0; i < tableSize; i++)
         if (tableName[i] == name) {
-            return i;
+            return (size_t) i;
         }
     return (size_t) -1;
 }
@@ -111,9 +111,9 @@ Table *Database::createTable(const std::string &name) {
 
 void Database::dropTableByName(const std::string &name) {
     int p = -1;
-    for (int i = 0; i < tableSize; i++)
+    for (size_t i = 0; i < tableSize; i++)
         if (tableName[i] == name) {
-            p = i;
+            p = (int) i;
             break;
         }
     if (p == -1) {
@@ -132,7 +132,7 @@ void Database::dropTableByName(const std::string &name) {
 
 std::vector<std::string> Database::getTableNames() {
     std::vector<std::string> name;
-    for (int i = 0; i < tableSize; i++) {
+    for (size_t i = 0; i < tableSize; i++) {
         name.push_back(tableName[i]);
     }
     return name;

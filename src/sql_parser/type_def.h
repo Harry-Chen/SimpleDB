@@ -114,7 +114,7 @@ typedef struct expr_node {
     };
     struct expr_node *right;
     operator_type op;
-    term_type term_type;
+    term_type node_type;
 } expr_node;
 
 typedef struct select_argu {

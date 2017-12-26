@@ -10,7 +10,7 @@
 class Database {
     bool ready;
     std::string tableName[MAX_TABLE_SIZE];
-    int tableSize;
+    size_t tableSize;
     Table *table[MAX_TABLE_SIZE];
     std::string dbName;
 

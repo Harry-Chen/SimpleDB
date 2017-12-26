@@ -7,10 +7,10 @@
 #include "constants.h"
 #include "Expression.h"
 
-using namespace std;
+using std::string;
 
-typedef std::pair<string, ExprVal> table_value_t;
-static std::multimap<string, table_value_t> column_cache;
+using table_value_t = std::pair<std::string, ExprVal>;
+static std::multimap<std::string, table_value_t> column_cache;
 
 const char *Exception2String[] = {
         "No exception",
@@ -23,12 +23,12 @@ const char *Exception2String[] = {
         "Wrong data type"
 };
 
-void clean_column_cache() {
+void cleanColumnCache() {
     // printf("clean cache all\n");
     column_cache.clear();
 }
 
-void clean_column_cache_by_table(const char *table) {
+void cleanColumnCacheByTable(const char *table) {
     // printf("clean cache %s\n", table);
     for (auto it = column_cache.begin(); it != column_cache.end();) {
         if (it->second.first == table)
@@ -38,7 +38,7 @@ void clean_column_cache_by_table(const char *table) {
     }
 }
 
-void update_column_cache(const char *col_name, const char *table, const ExprVal &v) {
+void updateColumnCache(const char *col_name, const char *table, const ExprVal &v) {
     // printf("update cache %s\n", table);
     column_cache.insert(std::make_pair(string(col_name), table_value_t(string(table), v)));
 }
@@ -46,10 +46,10 @@ void update_column_cache(const char *col_name, const char *table, const ExprVal 
 void free_expr(expr_node *expr) {
     if(!expr) return;
     if (expr->op == OPER_NONE) {
-        assert(expr->term_type != TERM_NONE);
-        if (expr->term_type == TERM_STRING)
+        assert(expr->node_type != TERM_NONE);
+        if (expr->node_type == TERM_STRING)
             free(expr->literal_s);
-        else if (expr->term_type == TERM_COLUMN) {
+        else if (expr->node_type == TERM_COLUMN) {
             if (expr->column->table)
                 free(expr->column->table);
             free(expr->column->column);
@@ -65,52 +65,51 @@ void free_expr(expr_node *expr) {
 }
 
 bool strlike(const char *a, const char *b) {
-    std::string regstr;
+    std::string regexStr;
     char status = 'A';
-    for (int i = 0; i < strlen(b); i++) {
+    for (size_t i = 0; i < strlen(b); i++) {
         if (status == 'A') {
             // common status
             if (b[i] == '\\') {
                 status = 'B';
             } else if (b[i] == '[') {
-                regstr += "[";
+                regexStr += "[";
                 status = 'C';
             } else if (b[i] == '%') {
-                regstr += ".*";
+                regexStr += ".*";
             } else if (b[i] == '_') {
-                regstr += ".";
+                regexStr += ".";
             } else {
-                regstr += b[i];
+                regexStr += b[i];
             }
         } else if (status == 'B') {
             // after '\'
             if (b[i] == '%' || b[i] == '_' || b[i] == '!') {
-                regstr += b[i];
+                regexStr += b[i];
             } else {
-                regstr += "\\";
-                regstr += b[i];
+                regexStr += "\\";
+                regexStr += b[i];
             }
             status = 'A';
-        } else if (status == 'C') {
+        } else {
             // after '[' inside []
             if (b[i] == '!') {
-                regstr += "^";
+                regexStr += "^";
             } else {
-                regstr += b[i];
+                regexStr += b[i];
             }
             status = 'A';
-        } else
-            assert(0);
+        }
     }
 
-    std::regex reg(regstr);
+    std::regex reg(regexStr);
     return std::regex_match(std::string(a), reg);
 }
 
 ExprVal termToValue(expr_node *expr) {
     ExprVal ret;
-    ret.type = expr->term_type;
-    switch (expr->term_type) {
+    ret.type = expr->node_type;
+    switch (expr->node_type) {
         case TERM_INT:
             ret.value.value_i = expr->literal_i;
             break;
@@ -175,7 +174,7 @@ ExprVal calcExpression(expr_node *expr) {
     assert(expr);
     if (expr->op == OPER_NONE)
         return termToValue(expr);
-    assert(expr->term_type == TERM_NONE);
+    assert(expr->node_type == TERM_NONE);
     ExprVal result;
     const ExprVal &lv = calcExpression(expr->left);
     const ExprVal &rv = (expr->op & OPER_UNARY) ? ExprVal() : calcExpression(expr->right);

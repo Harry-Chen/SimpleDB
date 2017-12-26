@@ -23,4 +23,7 @@
 
 #define DATE_FORMAT "%Y-%m-%d"
 
+using RID_t = unsigned int;
+#define UNUSED(x) (void)(x)
+
 #endif

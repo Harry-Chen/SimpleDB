@@ -268,7 +268,7 @@ aggregate: SUM '(' aggregate_term ')' {$$=(expr_node*)calloc(1,sizeof(expr_node)
 aggregate_term: column_ref {
                         $$=(expr_node*)calloc(1,sizeof(expr_node));
                         $$->op=OPER_NONE;
-                        $$->term_type=TERM_COLUMN;
+                        $$->node_type=TERM_COLUMN;
                         $$->column=$1;
                     }
                 ;
@@ -315,12 +315,12 @@ condition_term: expr compare_op expr {
             | TRUE {
                 $$=(expr_node*)calloc(1,sizeof(expr_node));
                 $$->literal_b=1;
-                $$->term_type=TERM_BOOL;
+                $$->node_type=TERM_BOOL;
             }
             | FALSE {
                 $$=(expr_node*)calloc(1,sizeof(expr_node));
                 $$->literal_b=0;
-                $$->term_type=TERM_BOOL;
+                $$->node_type=TERM_BOOL;
             }
             ;
 
@@ -366,31 +366,31 @@ factor: factor '*' term {
 term: column_ref {
             $$=(expr_node*)calloc(1,sizeof(expr_node));
             $$->column=$1;
-            $$->term_type=TERM_COLUMN;
+            $$->node_type=TERM_COLUMN;
         }
     | INT_LITERAL {
             $$=(expr_node*)calloc(1,sizeof(expr_node));
             $$->literal_i=$1;
-            $$->term_type=TERM_INT;
+            $$->node_type=TERM_INT;
         }
     | FLOAT_LITERAL {
             $$=(expr_node*)calloc(1,sizeof(expr_node));
             $$->literal_f=$1;
-            $$->term_type=TERM_FLOAT;
+            $$->node_type=TERM_FLOAT;
         }
     | DATE_LITERAL {
             $$=(expr_node*)calloc(1,sizeof(expr_node));
             $$->literal_s=$1;
-            $$->term_type=TERM_DATE;
+            $$->node_type=TERM_DATE;
         }
     | STRING_LITERAL {
             $$=(expr_node*)calloc(1,sizeof(expr_node));
             $$->literal_s=$1;
-            $$->term_type=TERM_STRING;
+            $$->node_type=TERM_STRING;
         }
     | TOKEN_NULL {
             $$=(expr_node*)calloc(1,sizeof(expr_node));
-            $$->term_type=TERM_NULL;
+            $$->node_type=TERM_NULL;
         }
     | '-' term {
             $$=(expr_node*)calloc(1,sizeof(expr_node));

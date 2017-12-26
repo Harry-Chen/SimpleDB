@@ -31,18 +31,18 @@ public:
 
     void operator/=(int);
 
-    ExprVal(term_type type_) : type(type_) {}
+    explicit ExprVal(term_type type_) : type(type_) {}
 
     ExprVal() = default;
 
     ExprVal(const ExprVal &) = default;
 };
 
-void clean_column_cache();
+void cleanColumnCache();
 
-void clean_column_cache_by_table(const char *table);
+void cleanColumnCacheByTable(const char *table);
 
-void update_column_cache(const char *col_name, const char *table, const ExprVal &v);
+void updateColumnCache(const char *col_name, const char *table, const ExprVal &v);
 
 ExprVal calcExpression(expr_node *expr);
 

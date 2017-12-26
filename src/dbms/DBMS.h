@@ -34,17 +34,19 @@ class DBMS {
 
     void freeCachedColumns();
 
-    IDX_TYPE checkIndexAvailability(Table *tb, int *rid_l, int *rid_u, int *col, expr_node *condition);
+    IDX_TYPE checkIndexAvailability(Table *tb, RID_t *rid_l, RID_t *rid_u, int *col, expr_node *condition);
 
-    int nextWithIndex(Table *tb, IDX_TYPE type, int col, int rid, int rid_u);
+    RID_t nextWithIndex(Table *tb, IDX_TYPE type, int col, RID_t rid, RID_t rid_u);
 
     expr_node* findJoinCondition(expr_node *condition);
 
-    bool iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, std::function<void(Table *, int)> callback);
+    using CallbackFunc = std::function<void(Table *, RID_t)>;
 
-    void iterateRecords(linked_list *tables, expr_node *condition, std::function<void(Table *, int)> callback);
+    bool iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, CallbackFunc callback);
 
-    void iterateRecords(Table *tb, expr_node *condition, std::function<void(Table *, int)> callback);
+    void iterateRecords(linked_list *tables, expr_node *condition, CallbackFunc callback);
+
+    void iterateRecords(Table *tb, expr_node *condition, CallbackFunc callback);
 
     int isAggregate(const linked_list *column_expr);
 

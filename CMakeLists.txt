@@ -4,7 +4,7 @@ PROJECT(SimpleDB)
 
 option(ENABLE_TEST "Enable test program build" ON)
 
-set(CMAKE_CXX_FLAGS "--std=c++11 -O3 ${CMAKE_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS "--std=c++11 -O3 -Wall -Wextra ${CMAKE_CXX_FLAGS}")
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 include_directories(${CMAKE_SOURCE_DIR}/include)
