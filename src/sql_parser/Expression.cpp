@@ -9,7 +9,7 @@
 
 using std::string;
 
-using table_value_t = std::pair<std::string, ExprVal>;
+using table_value_t = std::pair<std::string, Expression>;
 static std::multimap<std::string, table_value_t> column_cache;
 
 const char *Exception2String[] = {
@@ -38,7 +38,7 @@ void cleanColumnCacheByTable(const char *table) {
     }
 }
 
-void updateColumnCache(const char *col_name, const char *table, const ExprVal &v) {
+void updateColumnCache(const char *col_name, const char *table, const Expression &v) {
     // printf("update cache %s\n", table);
     column_cache.insert(std::make_pair(string(col_name), table_value_t(string(table), v)));
 }
@@ -106,8 +106,8 @@ bool strlike(const char *a, const char *b) {
     return std::regex_match(std::string(a), reg);
 }
 
-ExprVal termToValue(expr_node *expr) {
-    ExprVal ret;
+Expression termToValue(expr_node *expr) {
+    Expression ret;
     ret.type = expr->node_type;
     switch (expr->node_type) {
         case TERM_INT:
@@ -170,14 +170,14 @@ ExprVal termToValue(expr_node *expr) {
     return ret;
 }
 
-ExprVal calcExpression(expr_node *expr) {
+Expression calcExpression(expr_node *expr) {
     assert(expr);
     if (expr->op == OPER_NONE)
         return termToValue(expr);
     assert(expr->node_type == TERM_NONE);
-    ExprVal result;
-    const ExprVal &lv = calcExpression(expr->left);
-    const ExprVal &rv = (expr->op & OPER_UNARY) ? ExprVal() : calcExpression(expr->right);
+    Expression result;
+    const Expression &lv = calcExpression(expr->left);
+    const Expression &rv = (expr->op & OPER_UNARY) ? Expression() : calcExpression(expr->right);
     if (!(expr->op & OPER_UNARY) && rv.type == TERM_NULL) {  // (<anything> <any op> NULL) = NULL
         result.type = TERM_NULL;
         return result;
@@ -380,7 +380,7 @@ ExprVal calcExpression(expr_node *expr) {
     return result;
 }
 
-bool ExprVal::operator<(const ExprVal &b) const {
+bool Expression::operator<(const Expression &b) const {
     if (b.type == TERM_NULL || type == TERM_NULL)
         return false;
     if (type != b.type)
@@ -397,7 +397,7 @@ bool ExprVal::operator<(const ExprVal &b) const {
     }
 }
 
-void ExprVal::operator+=(const ExprVal &b) {
+void Expression::operator+=(const Expression &b) {
     if (b.type == TERM_NULL || type == TERM_NULL)
         return;
     if (type != b.type)
@@ -415,7 +415,7 @@ void ExprVal::operator+=(const ExprVal &b) {
 
 }
 
-void ExprVal::operator/=(int div) {
+void Expression::operator/=(int div) {
     if (type == TERM_NULL)
         return;
     switch (type) {

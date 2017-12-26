@@ -31,7 +31,7 @@ void DBMS::printReadableException(int err) {
     printf("%s\n", Exception2String[err]);
 }
 
-void DBMS::printExprVal(const ExprVal &val) {
+void DBMS::printExprVal(const Expression &val) {
     switch (val.type) {
         case TERM_INT:
             printf("%d", val.value.value_i);
@@ -59,7 +59,7 @@ void DBMS::printExprVal(const ExprVal &val) {
     }
 }
 
-bool DBMS::convertToBool(const ExprVal &val) {
+bool DBMS::convertToBool(const Expression &val) {
     bool t = false;
     switch (val.type) {
         case TERM_INT:
@@ -83,11 +83,11 @@ bool DBMS::convertToBool(const ExprVal &val) {
     return t;
 }
 
-ExprVal DBMS::dbTypeToExprType(char *data, ColumnType type) {
-    ExprVal v;
+Expression DBMS::dbTypeToExprType(char *data, ColumnType type) {
+    Expression v;
 
     if (data == nullptr) {
-        return ExprVal(TERM_NULL);
+        return Expression(TERM_NULL);
     }
     switch (type) {
         case CT_INT:
@@ -128,7 +128,7 @@ term_type DBMS::ColumnTypeToExprType(const ColumnType &type) {
     }
 }
 
-bool DBMS::checkColumnType(ColumnType type, const ExprVal &val) {
+bool DBMS::checkColumnType(ColumnType type, const Expression &val) {
     if (val.type == TERM_NULL)
         return true;
     switch (val.type) {
@@ -145,7 +145,7 @@ bool DBMS::checkColumnType(ColumnType type, const ExprVal &val) {
     }
 }
 
-char *DBMS::ExprTypeToDbType(ExprVal &val, term_type desiredType) {
+char *DBMS::ExprTypeToDbType(Expression &val, term_type desiredType) {
     char *ret = nullptr;
     //TODO: data type convert here, e.g. double->int
     switch (val.type) {
@@ -220,7 +220,7 @@ DBMS::IDX_TYPE DBMS::checkIndexAvailability(Table *tb, RID_t *rid_l, RID_t *rid_
     }*/
     if (c == -1 || !tb->hasIndex(c))
         return IDX_NONE;
-    ExprVal v;
+    Expression v;
     try {
         v = calcExpression(condition->right);
     } catch (int err) {
@@ -345,7 +345,7 @@ DBMS::iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, CallbackF
     }
 
 #define iterateUseIndex(x, y) cacheColumns(x, rid_##x);\
-    ExprVal v; \
+    Expression v; \
     try{\
         v = calcExpression(condition->left);\
     } catch (int err) {\
@@ -358,7 +358,7 @@ DBMS::iterateTwoTableRecords(Table *a, Table *b, expr_node *condition, CallbackF
     for (; rid_##y != (RID_t) -1; rid_##y = y->selectIndexNextEqual(col_##y)) {\
         cacheColumns(y, rid_##y);\
         if (condition) {\
-            ExprVal val_cond;\
+            Expression val_cond;\
             bool cond;\
             try {\
                 val_cond = calcExpression(orig_cond);\
@@ -408,7 +408,7 @@ void DBMS::iterateRecords(Table *tb, expr_node *condition, CallbackFunc callback
     for (; rid != (RID_t) -1; rid = nextWithIndex(tb, idx, col, rid, rid_u)) {
         cacheColumns(tb, rid);
         if (condition) {
-            ExprVal val_cond;
+            Expression val_cond;
             bool cond;
             try {
                 val_cond = calcExpression(condition);
@@ -553,7 +553,7 @@ void DBMS::createTable(const table_def *table) {
                     linked_list *exprs = cons->values;
                     for (; exprs; exprs = exprs->next) {
                         auto node = (expr_node *) exprs->data;
-                        ExprVal val;
+                        Expression val;
                         try {
                             val = calcExpression(node);
                         } catch (int err) {
@@ -684,7 +684,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
     }
     cleanColumnCache();
     if (flags == 2) { //aggregate functions only
-        std::map<int, ExprVal> aggregate_buf;
+        std::map<int, Expression> aggregate_buf;
         std::map<int, int> rowCount;
         try {
             iterateRecords(openedTables, condition,
@@ -694,7 +694,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
                                int col = 0;
                                for (const linked_list *j = column_expr; j; j = j->next, col++) {
                                    auto node = (expr_node *) j->data;
-                                   ExprVal val;
+                                   Expression val;
                                    if (node->op != OPER_COUNT) {
                                        val = calcExpression(node->left);
                                    }
@@ -738,7 +738,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
             if (node->op == OPER_AVG && aggregate_buf.count(col)) {
                 aggregate_buf[col] /= rowCount[col];
             } else if (node->op == OPER_COUNT) {
-                aggregate_buf[col] = ExprVal();
+                aggregate_buf[col] = Expression();
                 aggregate_buf[col].type = TERM_INT;
                 aggregate_buf[col].value.value_i = rowCount[col];
             }
@@ -747,7 +747,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
             if (aggregate_buf.count(i) != 0)
                 printExprVal(aggregate_buf[i]);
             else
-                printExprVal(ExprVal(TERM_NULL));
+                printExprVal(Expression(TERM_NULL));
             printf(" | ");
         }
         printf("\n");
@@ -758,7 +758,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
     int count = 0;
 
     iterateRecords(openedTables, condition, [&column_expr, &count, this](Table *tb, int rid) -> void {
-        std::vector<ExprVal> output_buf;
+        std::vector<Expression> output_buf;
         if (!column_expr) { // FIXME: will only select from one table when using *
             for (int i = tb->getColumnCount() - 1; i > 0; --i) {
                 output_buf.push_back(
@@ -771,7 +771,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
         } else {
             for (const linked_list *j = column_expr; j; j = j->next) {
                 auto *node = (expr_node *) j->data;
-                ExprVal val;
+                Expression val;
                 try {
                     val = calcExpression(node);
                     output_buf.push_back(val);
@@ -786,7 +786,7 @@ void DBMS::selectRow(const linked_list *tables, const linked_list *column_expr, 
         }
         printf("| ");
         for (auto i = output_buf.rbegin(); i != output_buf.rend(); ++i) {
-            const ExprVal &val = *i;
+            const Expression &val = *i;
             printExprVal(val);
             printf(" | ");
         }
@@ -816,7 +816,7 @@ void DBMS::updateRow(const char *table, expr_node *condition, column_ref *column
     int count = 0;
     try {
         iterateRecords(tb, condition, [&col_to_update, &eval, &count, this](Table *tb, int rid) -> void {
-            ExprVal new_val;
+            Expression new_val;
             new_val = calcExpression(eval);
             //printf("t=%d\n", tb->getColumnType(col_to_update));
             auto colType = tb->getColumnType(col_to_update);
@@ -908,7 +908,7 @@ void DBMS::insertRow(const char *table, const linked_list *columns, const linked
         std::string result;
         for (const linked_list *j = expr_list; j; j = j->next) {
             auto node = (expr_node *) j->data;
-            ExprVal val;
+            Expression val;
             try {
                 val = calcExpression(node);
             } catch (int err) {

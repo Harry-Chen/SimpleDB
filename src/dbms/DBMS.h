@@ -18,17 +18,17 @@ class DBMS {
 
     void printReadableException(int err);
 
-    void printExprVal(const ExprVal &val);
+    void printExprVal(const Expression &val);
 
-    bool convertToBool(const ExprVal &val);
+    bool convertToBool(const Expression &val);
 
-    ExprVal dbTypeToExprType(char *data, ColumnType type);
+    Expression dbTypeToExprType(char *data, ColumnType type);
 
-    char *ExprTypeToDbType(ExprVal &val, term_type desiredType);
+    char *ExprTypeToDbType(Expression &val, term_type desiredType);
 
     term_type ColumnTypeToExprType(const ColumnType& type);
 
-    bool checkColumnType(ColumnType type, const ExprVal &val);
+    bool checkColumnType(ColumnType type, const Expression &val);
     
     void cacheColumns(Table *tb, int rid);
 

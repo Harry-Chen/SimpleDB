@@ -15,7 +15,7 @@ enum {
     EXCEPTION_WRONG_DATA_TYPE
 };
 
-class ExprVal {
+class Expression {
 public:
     term_type type;
     union {
@@ -25,26 +25,26 @@ public:
         bool value_b;
     } value;
 
-    bool operator<(const ExprVal &) const;
+    bool operator<(const Expression &) const;
 
-    void operator+=(const ExprVal &);
+    void operator+=(const Expression &);
 
     void operator/=(int);
 
-    explicit ExprVal(term_type type_) : type(type_) {}
+    explicit Expression(term_type type_) : type(type_) {}
 
-    ExprVal() = default;
+    Expression() = default;
 
-    ExprVal(const ExprVal &) = default;
+    Expression(const Expression &) = default;
 };
 
 void cleanColumnCache();
 
 void cleanColumnCacheByTable(const char *table);
 
-void updateColumnCache(const char *col_name, const char *table, const ExprVal &v);
+void updateColumnCache(const char *col_name, const char *table, const Expression &v);
 
-ExprVal calcExpression(expr_node *expr);
+Expression calcExpression(expr_node *expr);
 
 void free_expr(expr_node *expr);
 
